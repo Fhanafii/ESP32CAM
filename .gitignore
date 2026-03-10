@@ -3,3 +3,7 @@
 .vscode/c_cpp_properties.json
 .vscode/launch.json
 .vscode/ipch
+esp32cam_env
+.env
+src/wifi_config.h
+server/recording.avi
