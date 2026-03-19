@@ -7,3 +7,4 @@ esp32cam_env
 .env
 src/wifi_config.h
 server/recording.avi
+TODO.md

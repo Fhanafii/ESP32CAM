@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include "esp_http_server.h"
 #include "wifi_config.h"
+#include "esp_sleep.h"
 
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
@@ -23,6 +24,12 @@ const char* password = WIFI_PASSWORD;
 #define VSYNC_GPIO_NUM    25
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
+#define PIR_PIN 13
+
+volatile bool allowStreaming = false;
+bool streaming = false;
+unsigned long streamStart = 0;
+const unsigned long STREAM_DURATION = 20000; // 20 detik
 
 static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=frame";
 static const char* _STREAM_BOUNDARY = "\r\n--frame\r\n";
@@ -40,7 +47,7 @@ static esp_err_t stream_handler(httpd_req_t *req){
 
     res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
 
-    while(true){
+    while(allowStreaming){
 
         fb = esp_camera_fb_get();
         if(!fb){
@@ -83,10 +90,28 @@ void startCameraServer(){
     }
 }
 
+void stopCameraServer(){
+    if(stream_httpd){
+        httpd_stop(stream_httpd);
+        stream_httpd = NULL;
+    }
+}
+
+void enterLightSleep(){
+
+    Serial.println("Entering light sleep...");
+
+    esp_sleep_enable_ext0_wakeup((gpio_num_t)PIR_PIN, 1);
+
+    esp_light_sleep_start();
+
+    Serial.println("Woke up!");
+}
+
 void setup(){
 
     Serial.begin(115200);
-
+    pinMode(PIR_PIN, INPUT);
     camera_config_t config;
     config.ledc_channel = LEDC_CHANNEL_0;
     config.ledc_timer = LEDC_TIMER_0;
@@ -115,8 +140,8 @@ void setup(){
     config.pixel_format = PIXFORMAT_JPEG;
 
     // Bisa diubah resolusi sesuai ukuran
-    config.frame_size = FRAMESIZE_SVGA;
-    config.jpeg_quality = 15;
+    config.frame_size = FRAMESIZE_SVGA;    
+    config.jpeg_quality = 20;
     config.fb_count = 2;
 
     esp_camera_init(&config);
@@ -135,7 +160,36 @@ void setup(){
     Serial.print(WiFi.localIP());
     Serial.println(":81/stream");
 
-    startCameraServer();
+    // startCameraServer();
 }
 
-void loop(){}
+void loop(){
+
+    if(!streaming){
+
+        enterLightSleep();
+
+        if(digitalRead(PIR_PIN) == HIGH){
+
+            Serial.println("Motion detected!");
+
+            startCameraServer();
+
+            streaming = true;
+            streamStart = millis();
+        }
+    }
+
+    if(streaming){
+
+        if(millis() - streamStart > STREAM_DURATION){
+
+            Serial.println("Stopping stream");
+
+            stopCameraServer();
+
+            streaming = false;
+        }
+    }
+    delay(50);
+}
