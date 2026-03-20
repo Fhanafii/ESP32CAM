@@ -1,12 +1,19 @@
 #include "esp_camera.h"
 #include <WiFi.h>
-#include "esp_http_server.h"
+#include <HTTPClient.h>
 #include "wifi_config.h"
-#include "esp_sleep.h"
 
+// WIFI
 const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 
+// SERVER LAPTOP
+const char* serverUrl = "http://192.168.1.3:5000/upload"; // GANTI IP
+
+// PIR
+#define PIR_PIN 13
+
+// CAMERA PIN (AI THINKER)
 #define PWDN_GPIO_NUM     32
 #define RESET_GPIO_NUM    -1
 #define XCLK_GPIO_NUM      0
@@ -24,94 +31,25 @@ const char* password = WIFI_PASSWORD;
 #define VSYNC_GPIO_NUM    25
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
-#define PIR_PIN 13
 
-volatile bool allowStreaming = false;
-bool streaming = false;
-unsigned long streamStart = 0;
-const unsigned long STREAM_DURATION = 20000; // 20 detik
+bool isCapturing = false;
 
-static const char* _STREAM_CONTENT_TYPE = "multipart/x-mixed-replace;boundary=frame";
-static const char* _STREAM_BOUNDARY = "\r\n--frame\r\n";
-static const char* _STREAM_PART = "Content-Type: image/jpeg\r\nContent-Length: %u\r\n\r\n";
+void sendImage(camera_fb_t * fb){
 
-httpd_handle_t stream_httpd = NULL;
+    HTTPClient http;
+    http.begin(serverUrl);
+    http.addHeader("Content-Type", "image/jpeg");
 
-static esp_err_t stream_handler(httpd_req_t *req){
+    int response = http.POST(fb->buf, fb->len);
 
-    camera_fb_t * fb = NULL;
-    esp_err_t res = ESP_OK;
-    size_t _jpg_buf_len;
-    uint8_t * _jpg_buf;
-    char part_buf[64];
+    Serial.print("HTTP Response: ");
+    Serial.println(response);
 
-    res = httpd_resp_set_type(req, _STREAM_CONTENT_TYPE);
-
-    while(allowStreaming){
-
-        fb = esp_camera_fb_get();
-        if(!fb){
-            return ESP_FAIL;
-        }
-
-        _jpg_buf_len = fb->len;
-        _jpg_buf = fb->buf;
-
-        size_t hlen = snprintf(part_buf, 64, _STREAM_PART, _jpg_buf_len);
-
-        res = httpd_resp_send_chunk(req, _STREAM_BOUNDARY, strlen(_STREAM_BOUNDARY));
-        res = httpd_resp_send_chunk(req, part_buf, hlen);
-        res = httpd_resp_send_chunk(req, (const char *)_jpg_buf, _jpg_buf_len);
-
-        esp_camera_fb_return(fb);
-
-        if(res != ESP_OK){
-            break;
-        }
-    }
-
-    return res;
+    http.end();
 }
 
-void startCameraServer(){
+void setupCamera(){
 
-    httpd_config_t config = HTTPD_DEFAULT_CONFIG();
-    config.server_port = 81;
-
-    httpd_uri_t stream_uri = {
-        .uri       = "/stream",
-        .method    = HTTP_GET,
-        .handler   = stream_handler,
-        .user_ctx  = NULL
-    };
-
-    if(httpd_start(&stream_httpd, &config) == ESP_OK){
-        httpd_register_uri_handler(stream_httpd, &stream_uri);
-    }
-}
-
-void stopCameraServer(){
-    if(stream_httpd){
-        httpd_stop(stream_httpd);
-        stream_httpd = NULL;
-    }
-}
-
-void enterLightSleep(){
-
-    Serial.println("Entering light sleep...");
-
-    esp_sleep_enable_ext0_wakeup((gpio_num_t)PIR_PIN, 1);
-
-    esp_light_sleep_start();
-
-    Serial.println("Woke up!");
-}
-
-void setup(){
-
-    Serial.begin(115200);
-    pinMode(PIR_PIN, INPUT);
     camera_config_t config;
     config.ledc_channel = LEDC_CHANNEL_0;
     config.ledc_timer = LEDC_TIMER_0;
@@ -139,57 +77,77 @@ void setup(){
     config.xclk_freq_hz = 20000000;
     config.pixel_format = PIXFORMAT_JPEG;
 
-    // Bisa diubah resolusi sesuai ukuran
-    config.frame_size = FRAMESIZE_SVGA;    
+    // 🔥 SETTING KAMU
+    config.frame_size = FRAMESIZE_VGA;
     config.jpeg_quality = 20;
-    config.fb_count = 2;
+    config.fb_count = 1; // lebih aman untuk RAM
 
-    esp_camera_init(&config);
+    esp_err_t err = esp_camera_init(&config);
 
-    WiFi.begin(ssid,password);
+    if (err != ESP_OK) {
+        Serial.println("Camera init failed");
+        return;
+    }
+}
 
-    while(WiFi.status()!=WL_CONNECTED){
+void connectWiFi(){
+
+    WiFi.begin(ssid, password);
+    Serial.print("Connecting WiFi");
+
+    while (WiFi.status() != WL_CONNECTED) {
         delay(500);
         Serial.print(".");
     }
 
-    Serial.println("");
-    Serial.println("WiFi connected");
+    Serial.println("\nWiFi connected");
+    Serial.println(WiFi.localIP());
+}
 
-    Serial.print("Stream: http://");
-    Serial.print(WiFi.localIP());
-    Serial.println(":81/stream");
+void setup(){
 
-    // startCameraServer();
+    Serial.begin(115200);
+
+    pinMode(PIR_PIN, INPUT_PULLDOWN);
+    
+    setupCamera();
+    connectWiFi();
 }
 
 void loop(){
 
-    if(!streaming){
+    int motion = digitalRead(PIR_PIN);
 
-        enterLightSleep();
+    if(motion == HIGH && !isCapturing){
 
-        if(digitalRead(PIR_PIN) == HIGH){
+        Serial.println("🚨 Motion detected!");
 
-            Serial.println("Motion detected!");
+        isCapturing = true;
 
-            startCameraServer();
+        // 🔥 ambil 15 frame
+        for(int i = 0; i < 15; i++){
 
-            streaming = true;
-            streamStart = millis();
+            camera_fb_t * fb = esp_camera_fb_get();
+
+            if(fb){
+
+                Serial.print("Frame ");
+                Serial.println(i+1);
+
+                sendImage(fb);
+
+                esp_camera_fb_return(fb);
+            }
+
+            delay(300); // stabilisasi jaringan
         }
+
+        Serial.println("✅ Capture selesai");
+
+        isCapturing = false;
+
+        delay(3000); // cooldown biar tidak trigger terus
     }
 
-    if(streaming){
-
-        if(millis() - streamStart > STREAM_DURATION){
-
-            Serial.println("Stopping stream");
-
-            stopCameraServer();
-
-            streaming = false;
-        }
-    }
-    delay(50);
+    delay(100);
 }
