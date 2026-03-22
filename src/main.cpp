@@ -8,7 +8,7 @@ const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 
 // SERVER LAPTOP
-const char* serverUrl = "http://192.168.1.3:5000/upload"; // GANTI IP
+const char* serverUrl = "http://192.168.1.3:5000/upload";
 
 // PIR
 #define PIR_PIN 13
@@ -77,10 +77,10 @@ void setupCamera(){
     config.xclk_freq_hz = 20000000;
     config.pixel_format = PIXFORMAT_JPEG;
 
-    // 🔥 SETTING KAMU
+    // SETTING
     config.frame_size = FRAMESIZE_VGA;
     config.jpeg_quality = 20;
-    config.fb_count = 1; // lebih aman untuk RAM
+    config.fb_count = 1;
 
     esp_err_t err = esp_camera_init(&config);
 
@@ -109,7 +109,12 @@ void setup(){
     Serial.begin(115200);
 
     pinMode(PIR_PIN, INPUT_PULLDOWN);
-    
+
+    // 🔥 PIR WARM-UP
+    Serial.println("⏳ PIR warming up (30 detik)...");
+    delay(30000);
+    Serial.println("✅ PIR READY!");
+
     setupCamera();
     connectWiFi();
 }
@@ -117,6 +122,10 @@ void setup(){
 void loop(){
 
     int motion = digitalRead(PIR_PIN);
+    
+    // debug pir state
+    Serial.println("PIR State: ");
+    Serial.println(motion);
 
     if(motion == HIGH && !isCapturing){
 
@@ -139,15 +148,21 @@ void loop(){
                 esp_camera_fb_return(fb);
             }
 
-            delay(300); // stabilisasi jaringan
+            delay(300);
         }
 
         Serial.println("✅ Capture selesai");
 
-        isCapturing = false;
+        // 🧠 Tunggu PIR kembali LOW (penting!)
+        Serial.println("⏳ Menunggu PIR LOW...");
+        while(digitalRead(PIR_PIN) == HIGH){
+            delay(100);
+        }
 
-        delay(3000); // cooldown biar tidak trigger terus
+        Serial.println("🟢 PIR LOW, siap deteksi lagi");
+
+        isCapturing = false;
     }
 
-    delay(100);
+    delay(50);
 }
