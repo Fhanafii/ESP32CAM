@@ -8,7 +8,7 @@ const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 
 // SERVER LAPTOP
-const char* serverUrl = "http://192.168.1.3:5000/upload";
+const char* serverUrl = "http://192.168.1.3:5000/upload"; // GANTI IP
 
 // PIR
 #define PIR_PIN 13
@@ -33,6 +33,13 @@ const char* serverUrl = "http://192.168.1.3:5000/upload";
 #define PCLK_GPIO_NUM     22
 
 bool isCapturing = false;
+bool lastMotionState = LOW;
+unsigned long lastTriggerTime = 0;
+const unsigned long COOLDOWN_TIME = 10000; // 10 detik
+
+// moving average config
+const int SAMPLE_COUNT = 5;
+const int THRESHOLD = 3; // minimal HIGH dianggap valid
 
 void sendImage(camera_fb_t * fb){
 
@@ -77,10 +84,10 @@ void setupCamera(){
     config.xclk_freq_hz = 20000000;
     config.pixel_format = PIXFORMAT_JPEG;
 
-    // SETTING
+    //SETTING
     config.frame_size = FRAMESIZE_VGA;
-    config.jpeg_quality = 20;
-    config.fb_count = 1;
+    config.jpeg_quality = 15;
+    config.fb_count = 1; // lebih aman untuk RAM
 
     esp_err_t err = esp_camera_init(&config);
 
@@ -109,11 +116,10 @@ void setup(){
     Serial.begin(115200);
 
     pinMode(PIR_PIN, INPUT_PULLDOWN);
-
-    // 🔥 PIR WARM-UP
-    Serial.println("⏳ PIR warming up (30 detik)...");
+    //PIR WARM-UP
+    Serial.println("PIR warming up (30 detik)...");
     delay(30000);
-    Serial.println("✅ PIR READY!");
+    Serial.println("PIR READY!");
 
     setupCamera();
     connectWiFi();
@@ -121,48 +127,74 @@ void setup(){
 
 void loop(){
 
-    int motion = digitalRead(PIR_PIN);
-    
-    // debug pir state
-    Serial.println("PIR State: ");
-    Serial.println(motion);
+    //MOVING AVERAGE FILTER
+    int highCount = 0;
 
-    if(motion == HIGH && !isCapturing){
+    for(int i = 0; i < SAMPLE_COUNT; i++){
+        if(digitalRead(PIR_PIN) == HIGH){
+            highCount++;
+        }
+        delay(10);
+    }
 
-        Serial.println("🚨 Motion detected!");
+    bool motionFiltered = (highCount >= THRESHOLD);
 
-        isCapturing = true;
+    // debug pir state (RAW + FILTERED)
+    Serial.print("PIR RAW: ");
+    Serial.print(digitalRead(PIR_PIN));
+    Serial.print(" | FILTERED: ");
+    Serial.println(motionFiltered);
 
-        // 🔥 ambil 15 frame
-        for(int i = 0; i < 15; i++){
+    unsigned long now = millis();
 
-            camera_fb_t * fb = esp_camera_fb_get();
+    //EDGE DETECTION + COOLDOWN (pakai FILTERED)
+    if(motionFiltered == HIGH && lastMotionState == LOW && !isCapturing){
 
-            if(fb){
+        if(now - lastTriggerTime < COOLDOWN_TIME){
+            Serial.println("Cooldown aktif, skip trigger");
+        } else {
 
-                Serial.print("Frame ");
-                Serial.println(i+1);
+            Serial.println("Motion VALID detected!");
+
+            isCapturing = true;
+            lastTriggerTime = now;
+
+            // ambil 15 frame
+            for(int i = 0; i < 15; i++){
+
+                camera_fb_t * fb = esp_camera_fb_get();
+
+                // VALIDASI FRAME
+                if(!fb){
+                    Serial.println("Frame NULL");
+                    continue;
+                }
+
+                if(fb->len < 2000){
+                    Serial.print("Frame terlalu kecil: ");
+                    Serial.println(fb->len);
+                    esp_camera_fb_return(fb);
+                    continue;
+                }
+
+                Serial.print("Size: ");
+                Serial.println(fb->len);
 
                 sendImage(fb);
 
                 esp_camera_fb_return(fb);
+
+                delay(400);
             }
 
-            delay(300);
+            Serial.println("Capture selesai");
+
+            isCapturing = false;
         }
-
-        Serial.println("✅ Capture selesai");
-
-        // 🧠 Tunggu PIR kembali LOW (penting!)
-        Serial.println("⏳ Menunggu PIR LOW...");
-        while(digitalRead(PIR_PIN) == HIGH){
-            delay(100);
-        }
-
-        Serial.println("🟢 PIR LOW, siap deteksi lagi");
-
-        isCapturing = false;
     }
 
-    delay(50);
+    //update state pakai FILTERED
+    lastMotionState = motionFiltered;
+
+    delay(100);
 }
