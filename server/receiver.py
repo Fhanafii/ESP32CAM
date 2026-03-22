@@ -16,6 +16,11 @@ def upload():
     npimg = np.frombuffer(data, np.uint8)
     img = cv2.imdecode(npimg, cv2.IMREAD_COLOR)
 
+    #FILTER FRAME RUSAK
+    if img is None:
+        print("Frame corrupt, di-skip")
+        return "FAIL", 400
+
     frames.append(img)
 
     cv2.imwrite(f"frame_{counter}.jpg", img)
