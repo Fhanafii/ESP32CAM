@@ -2,6 +2,7 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
 #include "wifi_config.h"
+#include "esp_sleep.h"
 
 // WIFI
 const char* ssid = WIFI_SSID;
@@ -125,6 +126,19 @@ void setup(){
     connectWiFi();
 }
 
+void enterLightSleep(){
+
+    Serial.println("Masuk light sleep...");
+
+    esp_sleep_enable_ext0_wakeup((gpio_num_t)PIR_PIN, 1);
+
+    delay(100); // biar serial kebaca
+
+    esp_light_sleep_start();
+
+    Serial.println("Bangun dari sleep!");
+}
+
 void loop(){
 
     //MOVING AVERAGE FILTER
@@ -195,6 +209,12 @@ void loop(){
 
     //update state pakai FILTERED
     lastMotionState = motionFiltered;
+    
+    //masuk ke mode sleep
+    if(!isCapturing && motionFiltered == LOW){
+
+        enterLightSleep();
+    }
 
     delay(100);
 }
