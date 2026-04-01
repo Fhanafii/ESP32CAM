@@ -8,3 +8,6 @@ esp32cam_env
 src/wifi_config.h
 server/recording.avi
 TODO.md
+server/venv*
+yolov8n.pt
+yolov8n_openvino_model/
