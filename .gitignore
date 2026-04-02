@@ -5,9 +5,11 @@
 .vscode/ipch
 esp32cam_env
 .env
-src/wifi_config.h
-server/recording.avi
+src/config.h
+server/frames*
 TODO.md
 server/venv*
 yolov8n.pt
+yolov8s.pt
 yolov8n_openvino_model/
+yolov8s_openvino_model/
