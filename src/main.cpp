@@ -1,7 +1,7 @@
 #include "esp_camera.h"
 #include <WiFi.h>
 #include <HTTPClient.h>
-#include "wifi_config.h"
+#include "config.h"
 #include "esp_sleep.h"
 
 // WIFI
@@ -9,7 +9,7 @@ const char* ssid = WIFI_SSID;
 const char* password = WIFI_PASSWORD;
 
 // SERVER LAPTOP
-const char* serverUrl = "http://192.168.1.3:5000/upload"; // GANTI IP
+const char* serverUrl = SERVER_URL; // GANTI IP
 
 // PIR
 #define PIR_PIN 13
@@ -45,7 +45,7 @@ const int THRESHOLD = 3; // minimal HIGH dianggap valid
 void sendImage(camera_fb_t * fb){
 
     HTTPClient http;
-    http.begin(serverUrl);
+    http.begin(String(serverUrl) + "/upload");
     http.addHeader("Content-Type", "image/jpeg");
 
     int response = http.POST(fb->buf, fb->len);
@@ -139,6 +139,16 @@ void enterLightSleep(){
     Serial.println("Bangun dari sleep!");
 }
 
+void sendBatchDone() {
+    HTTPClient http;
+    String url = String(serverUrl) + "/upload_done";
+    http.begin(url);
+    int response = http.POST("");  // empty POST
+    Serial.print("Upload done response: ");
+    Serial.println(response);
+    http.end();
+}
+
 void loop(){
 
     //MOVING AVERAGE FILTER
@@ -200,7 +210,7 @@ void loop(){
 
                 delay(400);
             }
-
+            sendBatchDone(); // kasih tau server batch udah selesai
             Serial.println("Capture selesai");
 
             isCapturing = false;
