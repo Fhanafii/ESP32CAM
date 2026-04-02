@@ -92,8 +92,7 @@ pip install -r requirements.txt
 ```bash
 yolo export model=yolov8n.pt format=openvino
 ```
-
-Setelah proses selesai, akan muncul folder:
+atau model yolo yang diinginkan. Setelah proses selesai, akan muncul folder:
 
 ```
 yolov8n_openvino_model/
@@ -121,20 +120,17 @@ http://0.0.0.0:5000
 2. Gambar dikirim ke server Flask
 3. Server mengumpulkan beberapa frame (batch)
 4. YOLOv8 memproses gambar
-5. Jika terdeteksi manusia, output akan:
-
-   * Manusia terdeteksi! Disimpan
-6. Jika tidak:
-
-   * Tidak ada manusia terdeteksi.
-7. Semua frame mentah dihapus otomatis
+5. Jika terdeteksi ataupun tidak terdeteksi manusia, output akan:
+   * Disimpan di dalam folder server/frames serta akan dibuat pseudo video dan juga log deteksi
+6. Batch yang mendeteksi manusia akan dikirim ke saluran whatsapp
 
 ---
 
 ## Output
 
-* `detected_*.jpg` → hasil deteksi manusia
-* Frame mentah → otomatis dihapus
+* `detected_*.jpg` → hasil deteksi manusia → membuat pseudo video (jika ada > 1 `detected_*.jpg` ) → `batch_*_detected.mp4`
+* `undetected_*.jpg` → tidak terdeteksi manusia → membuat pseudo video → `batch_*_undetected.mp4`
+* Hasil batch yang terdeteksi → saluran whatsapp
 
 ---
 
