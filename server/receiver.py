@@ -2,8 +2,11 @@ from flask import Flask, request
 import cv2
 import numpy as np
 import os
+import subprocess
+import threading
 from ultralytics import YOLO
 from datetime import datetime, timezone, timedelta  # added timedelta, timezone
+from worker import send_whatsapp_video
 
 app = Flask(__name__)
 
@@ -38,8 +41,8 @@ def upload():
 
     return "OK"
 
-def create_video_from_frames(folder_path, output_name="output.mp4", fps=3):
-    images = sorted([img for img in os.listdir(folder_path) if img.endswith(".jpg")])
+def create_video_from_frames(folder_path, output_name="output.mp4", fps=5):
+    images = sorted([img for img in os.listdir(folder_path) if img.endswith(".jpg") and ("detected" in img or "undetected" in img)])
 
     if len(images) == 0:
         print("Tidak ada gambar untuk video")
@@ -50,7 +53,7 @@ def create_video_from_frames(folder_path, output_name="output.mp4", fps=3):
 
     video_path = os.path.join(folder_path, output_name)
 
-    fourcc = cv2.VideoWriter_fourcc(*"mp4v")
+    fourcc = cv2.VideoWriter_fourcc(*"mp4v") # Gunakan codec MP4v untuk merangkai frame
     video = cv2.VideoWriter(video_path, fourcc, fps, (width, height))
 
     for image in images:
@@ -60,6 +63,20 @@ def create_video_from_frames(folder_path, output_name="output.mp4", fps=3):
 
     video.release()
     print(f"Video berhasil dibuat: {video_path}")
+
+def convert_to_whatsapp_format(input_path, output_path):
+    command = [
+        "ffmpeg",
+        "-y",
+        "-i", input_path,
+        "-vcodec", "libx264",
+        "-acodec", "aac",
+        "-pix_fmt", "yuv420p",
+        "-movflags", "+faststart",
+        output_path
+    ]
+
+    subprocess.run(command)
 
 @app.route('/upload_done', methods=['POST'])
 def upload_done():
@@ -81,6 +98,7 @@ def upload_done():
 
     try:
         for i, frame in enumerate(frames):
+            frame_time = datetime.now(WIB).strftime("%H:%M:%S") # timestamp per frame 
             r = model(
                 frame,
                 conf=0.3,
@@ -96,7 +114,7 @@ def upload_done():
                 # Tambahkan timestamp ke frame
                 cv2.putText(
                     annotated,
-                    timestamp,
+                    frame_time,
                     (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.4, # ukuran font lebih kecil
@@ -134,7 +152,18 @@ def upload_done():
         else:
             video_name = f"batch_{batch_count}_undetected.mp4"
 
-        create_video_from_frames(batch_folder, output_name=video_name, fps=3)
+        # Buat video dari frame yang sudah diproses
+        raw_video = os.path.join(batch_folder, "temp.mp4")
+        create_video_from_frames(batch_folder, output_name="temp.mp4", fps=5)
+        final_video = os.path.join(batch_folder, video_name)
+        convert_to_whatsapp_format(raw_video, final_video)  # overwrite dengan format yang sesuai
+        os.remove(raw_video)
+        if detected_count > 0:
+            threading.Thread(
+                target=send_whatsapp_video,
+                args=(final_video, "ESP32CAM Deteksi RT 07")
+            ).start()
+
     except Exception as e:
         print("ERROR YOLO:", e)
 
