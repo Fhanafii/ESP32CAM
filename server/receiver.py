@@ -3,10 +3,10 @@ import cv2
 import numpy as np
 import os
 import subprocess
-import threading
+import threading, queue
 from ultralytics import YOLO
 from datetime import datetime, timezone, timedelta  # added timedelta, timezone
-from worker import send_whatsapp_video
+from worker import send_whatsapp_video, init_whatsapp
 
 app = Flask(__name__)
 
@@ -19,6 +19,8 @@ model = YOLO("yolov8s_openvino_model/")
 frames = []
 counter = 0
 batch_count = 0
+# Buat antrean tugas
+wa_queue = queue.Queue()
 
 # WIB timezone (UTC+7)
 WIB = timezone(timedelta(hours=7))
@@ -77,6 +79,33 @@ def convert_to_whatsapp_format(input_path, output_path):
     ]
 
     subprocess.run(command)
+
+def whatsapp_worker():
+    """Thread mandiri yang mengontrol Playwright"""
+    print("WhatsApp Worker: Memulai Browser...")
+    try:
+        init_whatsapp() # Init di sini agar satu thread
+        print("WhatsApp Worker: Browser SIAP!")
+    except Exception as e:
+        print(f"WhatsApp Worker: GAGAL INIT: {e}")
+        return
+
+    while True:
+        # Menunggu tugas masuk ke antrean
+        video_path, channel_name = wa_queue.get()
+        print(f"WhatsApp Worker: Mulai mengirim {video_path}")
+        
+        try:
+            # Panggil fungsi kirim di worker.py
+            success = send_whatsapp_video(video_path, channel_name)
+            if success:
+                print(f"WhatsApp Worker: Berhasil kirim {video_path}")
+            else:
+                print(f"WhatsApp Worker: Gagal mengirim {video_path}")
+        except Exception as e:
+            print(f"WhatsApp Worker Error saat kirim: {e}")
+        finally:
+            wa_queue.task_done()
 
 @app.route('/upload_done', methods=['POST'])
 def upload_done():
@@ -155,14 +184,17 @@ def upload_done():
         # Buat video dari frame yang sudah diproses
         raw_video = os.path.join(batch_folder, "temp.mp4")
         create_video_from_frames(batch_folder, output_name="temp.mp4", fps=5)
+
+        # Konversi video ke format yang kompatibel
         final_video = os.path.join(batch_folder, video_name)
         convert_to_whatsapp_format(raw_video, final_video)  # overwrite dengan format yang sesuai
         os.remove(raw_video)
+
         if detected_count > 0:
-            threading.Thread(
-                target=send_whatsapp_video,
-                args=(final_video, "ESP32CAM Deteksi RT 07")
-            ).start()
+            # Masukkan data ke antrean, bukan membuat thread baru setiap saat
+            print(f"Menambahkan ke antrean WA: {final_video}")
+            wa_queue.put((final_video, "ESPCAM Deteksi RT 07"))
+        
 
     except Exception as e:
         print("ERROR YOLO:", e)
@@ -174,4 +206,10 @@ def upload_done():
 
 
 if __name__ == "__main__":
+    # 1. NYALAKAN WHATSAPP SEKALI SAJA SAAT STARTUP
+    print("Memulai Browser WhatsApp...")
+    t = threading.Thread(target=whatsapp_worker, daemon=True)
+    t.start()
+
+    print("Memulai Flask Server...")
     app.run(host="0.0.0.0", port=5000)
