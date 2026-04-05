@@ -60,7 +60,8 @@ def send_whatsapp_video(video_path, channel_name):
     global page
 
     if page is None:
-        init_whatsapp()
+        print("Error: Browser belum siap. Pastikan init_whatsapp dipanggil di main.")
+        return False
 
     if not open_channel(channel_name):
         return False
