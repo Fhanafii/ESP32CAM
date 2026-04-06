@@ -92,12 +92,12 @@ def whatsapp_worker():
 
     while True:
         # Menunggu tugas masuk ke antrean
-        video_path, channel_name = wa_queue.get()
+        video_path, channel_name, caption = wa_queue.get()
         print(f"WhatsApp Worker: Mulai mengirim {video_path}")
         
         try:
             # Panggil fungsi kirim di worker.py
-            success = send_whatsapp_video(video_path, channel_name)
+            success = send_whatsapp_video(video_path, channel_name, caption)
             if success:
                 print(f"WhatsApp Worker: Berhasil kirim {video_path}")
             else:
@@ -124,6 +124,7 @@ def upload_done():
     os.makedirs(batch_folder, exist_ok=True)
 
     detected_count = 0
+    confidences = [] # List untuk menampung confidence
 
     try:
         for i, frame in enumerate(frames):
@@ -139,6 +140,9 @@ def upload_done():
 
             if len(result.boxes) > 0:
                 detected_count += 1
+                # Ambil confidence score (biasanya result.boxes.conf adalah tensor)
+                conf_val = result.boxes.conf[0].item() 
+                confidences.append(conf_val)
                 annotated = result.plot()
                 # Tambahkan timestamp ke frame
                 cv2.putText(
@@ -157,7 +161,7 @@ def upload_done():
                 # Tambahkan timestamp juga ke frame tanpa deteksi
                 cv2.putText(
                     frame,
-                    timestamp,
+                    frame_time,
                     (10, 30),
                     cv2.FONT_HERSHEY_SIMPLEX,
                     0.4,
@@ -190,10 +194,23 @@ def upload_done():
         convert_to_whatsapp_format(raw_video, final_video)  # overwrite dengan format yang sesuai
         os.remove(raw_video)
 
+        # Hitung Rata-rata Confidence
+        avg_conf = (sum(confidences) / len(confidences) * 100) if confidences else 0
+
+        # Buat String Caption
+        caption = (
+            f"🚨 *DETEKSI MANUSIA TERKONFIRMASI*\n\n"
+            f"🕒 *Waktu:* `{frame_time}`\n"
+            f"📍 *Lokasi:* `ESPCAM RT 07`\n"
+            f"📊 *Akurasi Rata-rata:* `{avg_conf:.1f}%`\n"
+            f"📸 *Total Frame:* `{detected_count} pos / {len(frames)} total`\n"
+            f"🆔 *Batch:* `{batch_count}`"
+        )
+
         if detected_count > 0:
             # Masukkan data ke antrean, bukan membuat thread baru setiap saat
             print(f"Menambahkan ke antrean WA: {final_video}")
-            wa_queue.put((final_video, "ESPCAM Deteksi RT 07"))
+            wa_queue.put((final_video, "ESPCAM Deteksi RT 07", caption))
         
 
     except Exception as e:
