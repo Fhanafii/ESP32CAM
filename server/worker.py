@@ -56,7 +56,7 @@ def open_channel(channel_name):
 
 
 # SEND VIDEO
-def send_whatsapp_video(video_path, channel_name):
+def send_whatsapp_video(video_path, channel_name, caption=""):
     global page
 
     if page is None:
@@ -67,12 +67,26 @@ def send_whatsapp_video(video_path, channel_name):
         return False
 
     try:
+        # Gunakan selector data-tab="10" yang sangat spesifik untuk caption media
+        caption_selector = 'div[contenteditable="true"][data-tab]'
+        page.wait_for_selector(caption_selector, state="visible", timeout=20000)
+        
+        # masukan teks sekaligus(Mencegah Bubble Terpisah)
+        target_input = page.locator(caption_selector).last
+        target_input.click(force=True)
+        
+        target_input.fill(caption)
+        # Beri jeda agar sistem WhatsApp mensinkronkan teks ke file video
+        time.sleep(3)
+
+        print("Caption terisi lengkap. Atur file video...")
+
         # klik attach
         attach_button = page.locator(':is(button[aria-label="Lampirkan"], button[aria-label="Attach"])')
         attach_button.click()
         time.sleep(2)
 
-         # Ini akan memicu pembukaan file picker secara internal di browser
+        # Ini akan memicu pembukaan file picker secara internal di browser
         with page.expect_file_chooser() as fc_info:
             page.locator('span:has-text("Foto & Video"), span:has-text("Photos & Videos")').click()
         
@@ -83,19 +97,25 @@ def send_whatsapp_video(video_path, channel_name):
 
         time.sleep(5)
 
-        # klik send
-        page.wait_for_selector('div[role="button"][aria-label="Kirim"]', timeout=10000)
-        page.locator(':is(div[role="button"][aria-label="Kirim"], div[role="button"][aria-label="Send"])').first.click()
-
+        # klik tombol send
+        send_btn_editor = 'span[data-icon="send"], div[aria-label="Kirim"], div[aria-label="Send"]'
+        
+        # Tunggu tombol benar-benar siap diklik
+        page.wait_for_selector(send_btn_editor, state="visible", timeout=15000)
+        
+        # Klik tombol kirim yang ada di editor (biasanya elemen terakhir yang muncul)
+        page.locator(send_btn_editor).last.click(force=True)
+        
         print(f"Video terkirim ke {channel_name}")
 
         # delay anti spam
         time.sleep(60)
-
+        print("Bot Ready untuk deteksi batch berikutnya...")
         return True
 
     except Exception as e:
         print("Gagal kirim:", e)
+        page.keyboard.press("Escape")  # coba tutup layar editor jika error
         return False
 
 # WORKER LOOP
