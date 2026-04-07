@@ -10,7 +10,7 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v3
-        
+
       - name: Tailscale
         uses: tailscale/github-action@v2
         with:
@@ -28,6 +28,8 @@ jobs:
           script: |
             cd ~/ESP32CAM/server
             git pull origin main
-            # Restart service (pastikan sudah setting NOPASSWD di visudo)
+            sudo systemctl daemon-reload
             sudo systemctl restart espcam
+            echo "--- STATUS SERVICE SETELAH UPDATE ---"
+            systemctl status espcam --no-pager
             echo "Deploy Berhasil!"
