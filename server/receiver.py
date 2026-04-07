@@ -231,7 +231,8 @@ def status():
     }
 
 # Jalankan worker saat aplikasi di-load oleh Gunicorn
-# Gunakan pengecekan agar hanya running sekali
+# Gunakan start_wa_worker() hanya pada saat menggunakan Gunicorn, bukan saat run langsung untuk development
+# Hapus atau komentari start_wa_worker() jika menjalankan langsung dengan python receiver.py untuk menghindari multiple thread saat development
 def start_wa_worker():
     print("Memulai Thread Worker WhatsApp (Gunicorn)...", flush=True)
     t = threading.Thread(target=whatsapp_worker, daemon=True)
