@@ -201,7 +201,7 @@ def upload_done():
         caption = (
             f"🚨 *DETEKSI MANUSIA TERKONFIRMASI*\n\n"
             f"🕒 *Waktu:* `{frame_time}`\n"
-            f"📍 *Lokasi:* `ESPCAM RT 07`\n"
+            f"📍 *Lokasi:* `Jl.B6 gang belakang masjid Al-muhajirin RT 07/ RW 013 Kel.Pejagalan, Kec.Penjaringan, Jakarta Utara`\n"
             f"📊 *Akurasi Rata-rata:* `{avg_conf:.1f}%`\n"
             f"📸 *Total Frame:* `{detected_count} pos / {len(frames)} total`\n"
             f"🆔 *Batch:* `{batch_count}`"
@@ -221,6 +221,23 @@ def upload_done():
 
     return "OK"
 
+@app.route('/status')
+def status():
+    return {
+        "status": "Running",
+        "batch_terakhir": batch_count,
+        "antrean_wa": wa_queue.qsize(),
+        "timestamp": datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S")
+    }
+
+# Jalankan worker saat aplikasi di-load oleh Gunicorn
+# Gunakan pengecekan agar hanya running sekali
+def start_wa_worker():
+    print("Memulai Thread Worker WhatsApp (Gunicorn)...", flush=True)
+    t = threading.Thread(target=whatsapp_worker, daemon=True)
+    t.start()
+
+start_wa_worker()
 
 if __name__ == "__main__":
     # 1. NYALAKAN WHATSAPP SEKALI SAJA SAAT STARTUP
