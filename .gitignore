@@ -15,3 +15,6 @@ yolov8n_openvino_model/
 yolov8s_openvino_model/
 server/wa_data
 server/__pycache__
+server/access.log
+server/error.log
+server/qr_scan.png
