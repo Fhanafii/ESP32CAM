@@ -33,10 +33,15 @@ const char* serverUrl = SERVER_URL; // GANTI IP
 #define HREF_GPIO_NUM     23
 #define PCLK_GPIO_NUM     22
 
+#define uS_TO_S_FACTOR 1000000ULL  // Faktor konversi ke microseconds
+#define TIME_TO_SLEEP  600         // Bangun setiap 600 detik (10 menit)
+
 bool isCapturing = false;
 bool lastMotionState = LOW;
 unsigned long lastTriggerTime = 0;
 const unsigned long COOLDOWN_TIME = 10000; // 10 detik
+unsigned long lastHeartbeat = 0;
+const unsigned long heartbeatInterval = 600000; // 10 menit
 
 // moving average config
 const int SAMPLE_COUNT = 5;
@@ -131,6 +136,9 @@ void enterLightSleep(){
     Serial.println("Masuk light sleep...");
 
     esp_sleep_enable_ext0_wakeup((gpio_num_t)PIR_PIN, 1);
+    
+    // Timer wakeup agar espcam tidak tertidur lelap
+    esp_sleep_enable_timer_wakeup(TIME_TO_SLEEP * uS_TO_S_FACTOR);
 
     delay(100); // biar serial kebaca
 
@@ -149,7 +157,33 @@ void sendBatchDone() {
     http.end();
 }
 
+void sendHeartbeat(){
+    if(WiFi.status() == WL_CONNECTED){
+        HTTPClient http;
+        String url = String(SERVER_URL) + "/heartbeat";
+        http.begin(url);
+        int httpCode = http.POST(""); // empty POST
+        if (httpCode > 0) {
+            Serial.printf("[Heartbeat] Terkirim, code: %d\n", httpCode);
+        } else {
+            Serial.printf("[Heartbeat] Gagal, error: %s\n", http.errorToString(httpCode).c_str());
+        }
+        http.end();
+    }
+}
+
 void loop(){
+    // kirim heartbeat setiap 10 menit untuk indikasi device masih online
+    unsigned long currentMillis = millis();
+
+    if (currentMillis - lastHeartbeat >= heartbeatInterval){
+        if(WiFi.status() != WL_CONNECTED){
+            Serial.println("WiFi disconnected, mencoba reconnect...");
+            connectWiFi();
+        }
+        lastHeartbeat = currentMillis;
+        sendHeartbeat();
+    }
 
     //MOVING AVERAGE FILTER
     int highCount = 0;
