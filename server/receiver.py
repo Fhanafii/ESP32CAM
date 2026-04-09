@@ -3,7 +3,7 @@ import cv2
 import numpy as np
 import os
 import subprocess
-import threading, queue
+import threading, queue, time
 from ultralytics import YOLO
 from datetime import datetime, timezone, timedelta  # added timedelta, timezone
 from worker import send_whatsapp_video, init_whatsapp
@@ -24,6 +24,36 @@ wa_queue = queue.Queue()
 
 # WIB timezone (UTC+7)
 WIB = timezone(timedelta(hours=7))
+
+# Monitor esp32cam heartbeat
+last_seen = datetime.now(WIB)
+
+@app.route('/heartbeat', methods=['POST'])
+def heartbeat():
+    global last_seen
+    last_seen = datetime.now(WIB)
+    # Hanya print ke console (akan masuk ke error.log server)
+    print(f"[HEARTBEAT] ESPCAM Aktif - {last_seen.strftime('%Y-%m-%d %H:%M:%S')}", flush=True)
+    return "OK", 200
+
+def monitor_esp_health():
+    global last_seen
+    alert_logged = False
+    
+    while True:
+        time_diff = datetime.now(WIB) - last_seen
+        # Jika lebih dari 15 menit tidak ada kabar
+        if time_diff > timedelta(minutes=15):
+            if not alert_logged:
+                # Log ini akan muncul di 'journalctl' dan 'error.log'
+                print(f"!!! ALERT !!! ESPCAM OFFLINE SEJAK {last_seen.strftime('%H:%M:%S')}", flush=True)
+                alert_logged = True
+        else:
+            if alert_logged:
+                print("--- INFO --- ESPCAM KEMBALI ONLINE", flush=True)
+                alert_logged = False
+        
+        time.sleep(60)
 
 @app.route('/upload', methods=['POST'])
 def upload():
@@ -243,8 +273,7 @@ start_wa_worker()
 if __name__ == "__main__":
     # 1. NYALAKAN WHATSAPP SEKALI SAJA SAAT STARTUP
     print("Memulai Browser WhatsApp...")
-    t = threading.Thread(target=whatsapp_worker, daemon=True)
-    t.start()
-
+    threading.Thread(target=whatsapp_worker, daemon=True).start() # Mulai worker WhatsApp di thread terpisah 
+    threading.Thread(target=monitor_esp_health, daemon=True).start() # Mulai monitoring kesehatan ESP
     print("Memulai Flask Server...")
     app.run(host="0.0.0.0", port=5000)
