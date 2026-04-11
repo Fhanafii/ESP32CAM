@@ -270,7 +270,7 @@ def upload_done():
 
 @app.route('/status')
 def status():
-    global page, last_seen, batch_count, wa_queue
+    global page, last_seen, batch_count, wa_queue, is_maintenance
     
     # Cek Kondisi Browser & Page Playwright
     is_wa_ready = False
@@ -278,7 +278,7 @@ def status():
         # Jika page ada dan tidak tertutup
         if page and not page.is_closed():
             # Cek apakah kita masih di domain whatsapp
-            if "://whatsapp.com" in page.url:
+            if "whatsapp" in page.url:
                 is_wa_ready = True
     except Exception:
         is_wa_ready = False
@@ -289,6 +289,10 @@ def status():
 
     return {
         "server_time": datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S"),
+        "system_mode": {
+            "maintenance_mode": is_maintenance,
+            "status": "MAINTENANCE" if is_maintenance else "RUNNING"
+        },
         "whatsapp": {
             "status": "READY" if is_wa_ready else "CRASHED/DISCONNECTED",
             "current_channel": current_channel if is_wa_ready else None,
