@@ -6,7 +6,7 @@ import subprocess
 import threading, queue, time
 from ultralytics import YOLO
 from datetime import datetime, timezone, timedelta  # added timedelta, timezone
-from worker import send_whatsapp_video, init_whatsapp
+from worker import send_whatsapp_video, init_whatsapp, current_channel
 
 app = Flask(__name__)
 
@@ -253,11 +253,38 @@ def upload_done():
 
 @app.route('/status')
 def status():
+    global page, last_seen, batch_count, wa_queue
+    
+    # Cek Kondisi Browser & Page Playwright
+    is_wa_ready = False
+    try:
+        # Jika page ada dan tidak tertutup
+        if page and not page.is_closed():
+            # Cek apakah kita masih di domain whatsapp
+            if "://whatsapp.com" in page.url:
+                is_wa_ready = True
+    except Exception:
+        is_wa_ready = False
+
+    # Hitung selisih waktu heartbeat
+    time_diff = datetime.now(WIB) - last_seen
+    esp_status = "ONLINE" if time_diff.total_seconds() < 900 else "OFFLINE" # 15 menit threshold
+
     return {
-        "status": "Running",
-        "batch_terakhir": batch_count,
-        "antrean_wa": wa_queue.qsize(),
-        "timestamp": datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S")
+        "server_time": datetime.now(WIB).strftime("%Y-%m-%d %H:%M:%S"),
+        "whatsapp": {
+            "status": "READY" if is_wa_ready else "CRASHED/DISCONNECTED",
+            "current_channel": current_channel if is_wa_ready else None,
+            "queue_size": wa_queue.qsize()
+        },
+        "esp32cam": {
+            "status": esp_status,
+            "last_seen": last_seen.strftime("%Y-%m-%d %H:%M:%S"),
+            "seconds_since_last_seen": int(time_diff.total_seconds())
+        },
+        "statistics": {
+            "total_batch_processed": batch_count
+        }
     }
 
 # Jalankan worker saat aplikasi di-load oleh Gunicorn
