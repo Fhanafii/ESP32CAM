@@ -3,10 +3,10 @@ import cv2
 import numpy as np
 import os
 import subprocess
-import threading, queue, time
+import threading, queue, time, worker
 from ultralytics import YOLO
 from datetime import datetime, timezone, timedelta  # added timedelta, timezone
-from worker import send_whatsapp_video, init_whatsapp, current_channel
+from worker import send_whatsapp_video, init_whatsapp
 
 app = Flask(__name__)
 
@@ -14,7 +14,7 @@ app = Flask(__name__)
 os.makedirs("frames", exist_ok=True)
 
 # Load YOLOv8 OpenVINO model
-model = YOLO("yolov8s_openvino_model/")
+model = YOLO("yolov8m_openvino_model/")
 
 frames = []
 counter = 0
@@ -271,7 +271,7 @@ def upload_done():
 @app.route('/status')
 def status():
     global page, last_seen, batch_count, wa_queue, is_maintenance
-    
+    actual_channel = worker.current_channel
     # Cek Kondisi Browser & Page Playwright
     is_wa_ready = False
     try:
@@ -295,7 +295,7 @@ def status():
         },
         "whatsapp": {
             "status": "READY" if is_wa_ready else "CRASHED/DISCONNECTED",
-            "current_channel": current_channel if is_wa_ready else None,
+            "current_channel": actual_channel if is_wa_ready else None,
             "queue_size": wa_queue.qsize()
         },
         "esp32cam": {
