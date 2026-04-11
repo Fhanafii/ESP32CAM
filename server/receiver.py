@@ -154,12 +154,10 @@ def whatsapp_worker():
 @app.route('/upload_done', methods=['POST'])
 def upload_done():
     """Run YOLO on whatever frames are in the buffer"""
+    global frames, batch_count, counter
     if is_maintenance:
-        global frames
         frames = [] # Bersihkan buffer agar tidak menumpuk
         return "MAINTENANCE", 200
-
-    global frames, batch_count, counter
 
     if len(frames) == 0:
         return "No frames to process", 400
