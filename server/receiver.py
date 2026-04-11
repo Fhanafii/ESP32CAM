@@ -28,6 +28,17 @@ WIB = timezone(timedelta(hours=7))
 # Monitor esp32cam heartbeat
 last_seen = datetime.now(WIB)
 
+is_maintenance = False
+
+@app.route('/toggle_maintenance', methods=['GET'])
+def toggle_maintenance():
+    global is_maintenance, frames
+    is_maintenance = not is_maintenance
+    if is_maintenance:
+        frames = [] # Hapus frame yang nanggung saat maintenance dinyalakan
+    status = "AKTIF" if is_maintenance else "NONAKTIF"
+    return f"Mode Maintenance: {status}", 200
+
 @app.route('/heartbeat', methods=['POST'])
 def heartbeat():
     global last_seen
@@ -57,6 +68,9 @@ def monitor_esp_health():
 
 @app.route('/upload', methods=['POST'])
 def upload():
+    if is_maintenance:
+        return "MAINTENANCE", 200 # Balas 200 agar ESP tidak retrying terus
+
     global counter, frames
 
     data = request.data
@@ -140,6 +154,11 @@ def whatsapp_worker():
 @app.route('/upload_done', methods=['POST'])
 def upload_done():
     """Run YOLO on whatever frames are in the buffer"""
+    if is_maintenance:
+        global frames
+        frames = [] # Bersihkan buffer agar tidak menumpuk
+        return "MAINTENANCE", 200
+
     global frames, batch_count, counter
 
     if len(frames) == 0:
