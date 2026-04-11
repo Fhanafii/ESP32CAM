@@ -23,6 +23,7 @@ def init_whatsapp():
 
     page = context.pages[0] if context.pages else context.new_page()
     page.goto("https://web.whatsapp.com")
+    page.wait_for_load_state("networkidle")
 
     print("Tunggu login (scan QR jika perlu)...")
 
@@ -30,9 +31,38 @@ def init_whatsapp():
     time.sleep(15)  # tunggu 15 detik untuk load awal
     print("WhatsApp siap!")
 
+# Tambahkan fungsi ini untuk mengecek apakah WA masih sehat
+def check_whatsapp_health():
+    global page
+    try:
+        # 1. Cek apakah ada tombol "Gunakan di Sini" (jika WA terbuka di tempat lain)
+        use_here_btn = page.locator('div[role="button"]:has-text("Gunakan di Sini"), div[role="button"]:has-text("Use Here")')
+        if use_here_btn.is_visible():
+            print("WhatsApp terbuka di perangkat lain. Mengalihkan kembali ke sini...", flush=True)
+            use_here_btn.click()
+            time.sleep(5)
+
+        # 2. Cek apakah halaman error/crash (tidak ada input chat)
+        chat_input = page.locator('div[contenteditable="true"]')
+        if not chat_input.first.is_visible():
+            print("WhatsApp Web tampak macet/idle. Melakukan Reload...", flush=True)
+            page.reload()
+            time.sleep(15) # Tunggu loading setelah reload
+            return False
+        
+        return True
+    except Exception as e:
+        print(f"Health Check Error: {e}", flush=True)
+        return False
+
+
 # BUKA CHANNEL
 def open_channel(channel_name):
     global page, current_channel
+
+    # Cek kesehatan sesi sebelum pindah channel
+    if not check_whatsapp_health():
+        current_channel = None # Reset agar dipaksa buka ulang setelah reload
 
     if current_channel == channel_name:
         return True
@@ -42,8 +72,18 @@ def open_channel(channel_name):
         page.locator('button[data-navbar-item-index="2"]').click()
         time.sleep(3)
 
-        # pilih channel
-        page.locator(f'span[title="{channel_name}"]').click()
+        target = page.locator(f'span[title="{channel_name}"]').first
+        if not target.is_visible():
+            # Jika tidak ketemu, coba cari di kolom search atau scroll
+            print(f"Saluran {channel_name} tidak terlihat, mencoba refresh...", flush=True)
+            page.reload()
+            time.sleep(10)
+            # Coba lagi setelah reload
+            page.locator('button[data-navbar-item-index="2"]').click()
+            time.sleep(3)
+            target = page.locator(f'span[title="{channel_name}"]').first
+            
+        target.click()
         time.sleep(3)
 
         current_channel = channel_name
