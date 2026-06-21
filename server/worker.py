@@ -37,7 +37,7 @@ def check_whatsapp_health():
     try:
         # 1. Bersihkan Pop-up "Apa yang baru di WhatsApp Web" atau Info Pembaruan Berlapis
         # Mencari tombol X di dalam elemen modal yang muncul
-        popup_close_btn = page.locator('div[role="dialog"] button span[data-icon="x"], div[role="dialog"] [aria-label="Tutup"], div[role="dialog"] button:has-text("Batal")')
+        popup_close_btn = page.locator('button:is([aria-label="Tutup"], [aria-label="Close"])').first
         if popup_close_btn.first.is_visible():
             print("Terdeteksi pop-up pengumuman menghalangi layar. Menutup pop-up...", flush=True)
             popup_close_btn.first.click(force=True)
@@ -87,7 +87,7 @@ def open_channel(channel_name):
             page.reload()
             time.sleep(10)
             # Coba lagi setelah reload
-            page.locator('button[data-navbar-item-index="2"]').click()
+            page.locator('button[data-navbar-item-index="2"]').click(force=True)
             time.sleep(3)
             target = page.locator(f'span[title="{channel_name}"]').first
             
