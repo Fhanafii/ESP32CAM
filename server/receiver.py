@@ -172,6 +172,7 @@ def upload_done():
 
     detected_count = 0
     confidences = [] # List untuk menampung confidence
+    presence_flags = []
 
     try:
         for i, frame in enumerate(frames):
@@ -187,6 +188,7 @@ def upload_done():
 
             if len(result.boxes) > 0:
                 detected_count += 1
+                presence_flags.append(1)
                 # Ambil confidence score (biasanya result.boxes.conf adalah tensor)
                 conf_val = result.boxes.conf[0].item() 
                 confidences.append(conf_val)
@@ -206,6 +208,7 @@ def upload_done():
                 print(f"Detected → {filename}")
             else:
                 # Tambahkan timestamp juga ke frame tanpa deteksi
+                presence_flags.append(0)
                 cv2.putText(
                     frame,
                     frame_time,
@@ -243,18 +246,65 @@ def upload_done():
 
         # Hitung Rata-rata Confidence
         avg_conf = (sum(confidences) / len(confidences) * 100) if confidences else 0
+        # Hitung rasio kehadiran manusia dalam batch
+        presence_ratio = detected_count / len(frames)
+        # Hitung streak deteksi terpanjang
+        current_streak = 0
+        longest_streak = 0
 
+        for flag in presence_flags:
+
+            if flag == 1:
+                current_streak += 1
+                longest_streak = max(longest_streak, current_streak)
+
+            else:
+                current_streak = 0
+        
+        # Kriteria untuk mengirim notifikasi ke WA
+        human_confirmed = (detected_count >= 2)
+
+        # Suspicion Score untuk menentukan apakah hasil deteksi itu mencurigakan atau tidak
+        score = 0
+        # Rule 1: Presence Ratio
+        if presence_ratio >= 0.50:
+            score += 1
+
+        # Rule 2: Longest Streak
+        if longest_streak >= 5:
+            score += 1
+
+        # Rule 3: Confidence YOLO
+        if avg_conf >= 60:
+            score += 1
+
+        # Suspicious Label berdasarkan score
+        if score == 0:
+            suspicious_label = "Normal"
+
+        elif score == 1:
+            suspicious_label = "Perlu Dipantau"
+
+        elif score == 2:
+            suspicious_label = "Mencurigakan"
+
+        else:
+            suspicious_label = "Sangat Mencurigakan"
+        
         # Buat String Caption
         caption = (
             f"🚨 *DETEKSI MANUSIA TERKONFIRMASI*\n\n"
             f"🕒 *Waktu:* `{frame_time}`\n"
             f"📍 *Lokasi:* `Jl.B6 gang belakang masjid Al-muhajirin RT 07/ RW 013 Kel.Pejagalan, Kec.Penjaringan, Jakarta Utara`\n"
-            f"📊 *Akurasi Rata-rata:* `{avg_conf:.1f}%`\n"
+            f"⚠️ *Status:* `{suspicious_label}`\n"
+            f"📊 *Confidence YOLO:* `{avg_conf:.1f}%`\n"
             f"📸 *Total Frame:* `{detected_count} pos / {len(frames)} total`\n"
+            f"📈 *Presence Ratio:* `{presence_ratio:.2f}`\n"
+            f"🔗 *Longest Streak:* `{longest_streak}` frame\n"
             f"🆔 *Batch:* `{batch_count}`"
         )
 
-        if detected_count > 0:
+        if human_confirmed:
             # Masukkan data ke antrean, bukan membuat thread baru setiap saat
             print(f"Menambahkan ke antrean WA: {final_video}")
             wa_queue.put((final_video, "ESPCAM Deteksi RT 07", caption))
