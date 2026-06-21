@@ -31,18 +31,26 @@ def init_whatsapp():
     time.sleep(15)  # tunggu 15 detik untuk load awal
     print("WhatsApp siap!")
 
-# Tambahkan fungsi ini untuk mengecek apakah WA masih sehat
+# Tambahkan fungsi ini untuk mengecek apakah WA masih sehat dan membersihkan pop-up
 def check_whatsapp_health():
     global page
     try:
-        # 1. Cek apakah ada tombol "Gunakan di Sini" (jika WA terbuka di tempat lain)
+        # 1. Bersihkan Pop-up "Apa yang baru di WhatsApp Web" atau Info Pembaruan Berlapis
+        # Mencari tombol X di dalam elemen modal yang muncul
+        popup_close_btn = page.locator('div[role="dialog"] button span[data-icon="x"], div[role="dialog"] [aria-label="Tutup"], div[role="dialog"] button:has-text("Batal")')
+        if popup_close_btn.first.is_visible():
+            print("Terdeteksi pop-up pengumuman menghalangi layar. Menutup pop-up...", flush=True)
+            popup_close_btn.first.click(force=True)
+            time.sleep(2)
+
+        # 2. Cek apakah ada tombol "Gunakan di Sini" (jika WA terbuka di tempat lain)
         use_here_btn = page.locator('div[role="button"]:has-text("Gunakan di Sini"), div[role="button"]:has-text("Use Here")')
         if use_here_btn.is_visible():
             print("WhatsApp terbuka di perangkat lain. Mengalihkan kembali ke sini...", flush=True)
-            use_here_btn.click()
+            use_here_btn.click(force=True)
             time.sleep(5)
 
-        # 2. Cek apakah halaman error/crash (tidak ada input chat)
+        # 3. Cek apakah halaman error/crash (tidak ada input chat)
         chat_input = page.locator('div[contenteditable="true"]')
         if not chat_input.first.is_visible():
             print("WhatsApp Web tampak macet/idle. Melakukan Reload...", flush=True)
@@ -69,7 +77,7 @@ def open_channel(channel_name):
 
     try:
         # klik icon Channels
-        page.locator('button[data-navbar-item-index="2"]').click()
+        page.locator('button[data-navbar-item-index="2"]').click(force=True)
         time.sleep(3)
 
         target = page.locator(f'span[title="{channel_name}"]').first
