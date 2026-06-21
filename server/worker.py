@@ -146,7 +146,7 @@ def send_whatsapp_video(video_path, channel_name, caption=""):
         time.sleep(5)
 
         # klik tombol send
-        send_btn_editor = 'span[data-icon="send"], div[aria-label="Kirim"], div[aria-label="Send"]'
+        send_btn_editor = 'span[data-icon="wds-ic-send-filled"], div[aria-label*="Kirim"], div[aria-label*="Send"]'
         
         # Tunggu tombol benar-benar siap diklik
         page.wait_for_selector(send_btn_editor, state="visible", timeout=15000)
