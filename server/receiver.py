@@ -267,7 +267,7 @@ def upload_done():
         # Suspicion Score untuk menentukan apakah hasil deteksi itu mencurigakan atau tidak
         score = 0
         # Rule 1: Presence Ratio
-        if presence_ratio >= 0.50:
+        if presence_ratio >= 0.70:
             score += 1
 
         # Rule 2: Longest Streak
@@ -275,7 +275,7 @@ def upload_done():
             score += 1
 
         # Rule 3: Confidence YOLO
-        if avg_conf >= 60:
+        if avg_conf >= 70:
             score += 1
 
         # Suspicious Label berdasarkan score
