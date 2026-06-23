@@ -251,6 +251,8 @@ def upload_done():
         # Hitung streak deteksi terpanjang
         current_streak = 0
         longest_streak = 0
+        # Cek jam saat ini untuk rule deteksi di jam sepi
+        current_hour = datetime.now(WIB).hour
 
         for flag in presence_flags:
 
@@ -276,6 +278,10 @@ def upload_done():
 
         # Rule 3: Confidence YOLO
         if avg_conf >= 90:
+            score += 1
+
+        # Rule 4: Time of Detection (misal deteksi terjadi di jam-jam sepi)
+        if current_hour >= 22 or current_hour < 6: # Deteksi antara jam 10 malam - 6 pagi
             score += 1
 
         # Suspicious Label berdasarkan score
