@@ -271,11 +271,11 @@ def upload_done():
             score += 1
 
         # Rule 2: Longest Streak
-        if longest_streak >= 5:
+        if longest_streak >= 7:
             score += 1
 
         # Rule 3: Confidence YOLO
-        if avg_conf >= 70:
+        if avg_conf >= 90:
             score += 1
 
         # Suspicious Label berdasarkan score
@@ -283,13 +283,13 @@ def upload_done():
             suspicious_label = "Normal"
 
         elif score == 1:
-            suspicious_label = "Perlu Dipantau"
+            suspicious_label = "Normal"
 
         elif score == 2:
-            suspicious_label = "Mencurigakan"
+            suspicious_label = "Perlu Dipantau"
 
         else:
-            suspicious_label = "Sangat Mencurigakan"
+            suspicious_label = "Mencurigakan"
         
         # Buat String Caption
         caption = (
