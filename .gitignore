@@ -27,3 +27,4 @@ monitoring/.next
 monitoring/node_modules
 monitoring/AGENTS.md
 monitoring/CLAUDE.md
+server/config.py
