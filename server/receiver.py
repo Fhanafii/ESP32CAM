@@ -4,11 +4,14 @@ import numpy as np
 import os
 import subprocess
 import threading, queue, time, worker
+from database import Database
+from flask import Flask
 from ultralytics import YOLO
 from datetime import datetime, timezone, timedelta  # added timedelta, timezone
 from worker import send_whatsapp_video, init_whatsapp
 
 app = Flask(__name__)
+db = Database()
 
 # Buat folder untuk menyimpan hasil deteksi jika belum ada
 os.makedirs("frames", exist_ok=True)
@@ -224,9 +227,17 @@ def upload_done():
 
         # Log deteksi
         with open(f"{batch_folder}/log.txt", "w") as f:
-            f.write(f"Total frames: {len(frames)}\n")
+            f.write(f"Batch Number: {batch_count}\n")
+            f.write(f"Timestamp: {timestamp}\n")
             f.write(f"Detected: {detected_count}\n")
             f.write(f"Undetected: {len(frames) - detected_count}\n")
+            f.write(f"Total frames: {len(frames)}\n")
+            f.write(f"Average Confidence: {sum(confidences)/len(confidences) if confidences else 0:.2f}\n")
+            f.write(f"Presence Ratio: {detected_count/len(frames):.2f}\n")
+            f.write(f"Longest Streak: {max_streak}\n")
+            f.write(f"Suspicion Score: {score}\n")
+            f.write(f"Status: {suspicious_label}\n")
+            f.write(f"WhatsApp Sent: {human_confirmed}\n") 
 
         print(f"Batch done! Saved to {batch_folder}")
         
@@ -296,7 +307,27 @@ def upload_done():
 
         else:
             suspicious_label = "Mencurigakan"
-        
+
+
+        try:
+            db.save_detection({
+                "batch_number": batch_count,
+                "batch_folder": batch_folder,
+                "detected_at": datetime.now(WIB),
+                "total_frames": len(frames),
+                "detected_frames": detected_count,
+                "avg_confidence": round(avg_conf,2),
+                "presence_ratio": round(presence_ratio,2),
+                "longest_streak": longest_streak,
+                "suspicion_score": score,
+                "status": suspicious_label,
+                "whatsapp_sent": human_confirmed
+            })
+            print("Database Saved")
+            
+        except Exception as e:
+            print(f"Database Error : {e}")
+
         # Buat String Caption
         caption = (
             f"🚨 *DETEKSI MANUSIA TERKONFIRMASI*\n\n"
