@@ -1,11 +1,16 @@
-import Image from "next/image";
+import { Header } from "@/components/layout/header";
+import { SummaryGrid } from "@/components/dashboard/summary-grid";
 
 export default function HomePage() {
   return (
-    <main className="flex min-h-screen items-center justify-center">
-      <h1 className="text-4xl font-bold">
-        IoT Security Monitoring
-      </h1>
-    </main>
-  )
+    <>
+      <Header />
+
+      <main className="mx-auto flex max-w-7xl flex-col gap-8 px-6 py-8">
+
+        <SummaryGrid />
+
+      </main>
+    </>
+  );
 }
