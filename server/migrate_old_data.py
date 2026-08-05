@@ -36,14 +36,11 @@ def parse_folder(folder_name):
     return batch_number, detected_at
 
 
-def scan_batch(path):
+def scan_batch(path, folder):
 
     total_frames = 0
-
     detected_frames = 0
-
     thumbnail = None
-
     video = None
 
     for file in sorted(os.listdir(path)):
@@ -58,46 +55,34 @@ def scan_batch(path):
 
                 if thumbnail is None:
 
-                    thumbnail = os.path.join(path, file)
+                    thumbnail = f"frames/{folder}/{file}"
 
         elif file.endswith(".mp4"):
 
-            video = os.path.join(path, file)
+            video = f"frames/{folder}/{file}"
 
     return {
-
         "total_frames": total_frames,
-
         "detected_frames": detected_frames,
-
         "thumbnail_path": thumbnail,
-
         "video_path": video
-
     }
 
 
 def migrate():
 
     inserted = 0
-
     skipped = 0
-
     folders = sorted(os.listdir(FRAMES_DIR))
 
     for folder in folders:
 
         full_path = os.path.join(
-
             FRAMES_DIR,
-
             folder
-
         )
 
-        if not os.path.isdir(full_path):
-
-            continue
+        relative_folder = f"frames/{folder}"
 
         parsed = parse_folder(folder)
 
@@ -109,7 +94,7 @@ def migrate():
 
         batch_number, detected_at = parsed
 
-        if db.exists_batch_folder(full_path):
+        if db.exists_batch_folder(relative_folder):
 
             skipped += 1
 
@@ -117,7 +102,7 @@ def migrate():
 
             continue
 
-        result = scan_batch(full_path)
+        result = scan_batch(full_path, folder)
 
         if result["detected_frames"] == 0:
 
@@ -159,7 +144,7 @@ def migrate():
             "status": status,
             "thumbnail_path": result["thumbnail_path"],
             "video_path": result["video_path"],
-            "batch_folder": full_path,
+            "batch_folder": relative_folder,
             "whatsapp_sent": whatsapp
         })
 

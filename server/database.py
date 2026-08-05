@@ -296,57 +296,71 @@ class Database:
 
     # Migrate data from old folder structure
     def exists_batch_folder(self, batch_folder):
-        query = """
-            SELECT 1
-            FROM detections
-            WHERE batch_folder=%s
-            LIMIT 1
-        """
+        conn = self.connect()
 
-        self.cursor.execute(query, (batch_folder,))
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    SELECT 1
+                    FROM detections
+                    WHERE batch_folder = %s
+                    LIMIT 1
+                    """,
+                    (batch_folder,)
+                )
+                return cur.fetchone() is not None
 
-        return self.cursor.fetchone() is not None
+        except Exception:
+            raise
 
     def insert_detection(self, data):
+        conn = self.connect()
 
-        query = """
-        INSERT INTO detections
-        (
-            batch_number,
-            detected_at,
-            total_frames,
-            detected_frames,
-            avg_confidence,
-            presence_ratio,
-            longest_streak,
-            suspicion_score,
-            status,
-            thumbnail_path,
-            video_path,
-            batch_folder,
-            whatsapp_sent
-        )
-        VALUES
-        (
-            %(batch_number)s,
-            %(detected_at)s,
-            %(total_frames)s,
-            %(detected_frames)s,
-            %(avg_confidence)s,
-            %(presence_ratio)s,
-            %(longest_streak)s,
-            %(suspicion_score)s,
-            %(status)s,
-            %(thumbnail_path)s,
-            %(video_path)s,
-            %(batch_folder)s,
-            %(whatsapp_sent)s
-        )
-        """
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO detections
+                    (
+                        batch_number,
+                        detected_at,
+                        total_frames,
+                        detected_frames,
+                        avg_confidence,
+                        presence_ratio,
+                        longest_streak,
+                        suspicion_score,
+                        status,
+                        thumbnail_path,
+                        video_path,
+                        batch_folder,
+                        whatsapp_sent
+                    )
+                    VALUES
+                    (
+                        %(batch_number)s,
+                        %(detected_at)s,
+                        %(total_frames)s,
+                        %(detected_frames)s,
+                        %(avg_confidence)s,
+                        %(presence_ratio)s,
+                        %(longest_streak)s,
+                        %(suspicion_score)s,
+                        %(status)s,
+                        %(thumbnail_path)s,
+                        %(video_path)s,
+                        %(batch_folder)s,
+                        %(whatsapp_sent)s
+                    )
+                    """,
+                    data,
+                )
+            conn.commit()
 
-        self.cursor.execute(query, data)
-
-        self.conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
 
 
     def update_detection_from_whatsapp(
@@ -360,43 +374,39 @@ class Database:
         status
     ):
 
-        query = """
-            UPDATE detections
+        conn = self.connect()
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    UPDATE detections
 
-            SET
+                    SET
+                        avg_confidence = %s,
+                        presence_ratio = %s,
+                        longest_streak = %s,
+                        suspicion_score = %s,
+                        status = %s,
+                        whatsapp_sent = TRUE
 
-                avg_confidence=%s,
+                    WHERE
+                        batch_number = %s
+                    AND
+                        detected_at = %s
+                    """,
+                    (
+                        avg_confidence,
+                        presence_ratio,
+                        longest_streak,
+                        suspicion_score,
+                        status,
+                        batch_number,
+                        detected_at,
+                    ),
+                )
 
-                presence_ratio=%s,
+            conn.commit()
 
-                longest_streak=%s,
-
-                suspicion_score=%s,
-
-                status=%s,
-
-                whatsapp_sent=TRUE
-
-            WHERE
-
-                batch_number=%s
-
-            AND
-
-                detected_at=%s
-        """
-
-        self.cursor.execute(
-            query,
-            (
-                avg_confidence,
-                presence_ratio,
-                longest_streak,
-                suspicion_score,
-                status,
-                batch_number,
-                detected_at
-            )
-        )
-
-        self.conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
