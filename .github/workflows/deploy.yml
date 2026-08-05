@@ -26,10 +26,19 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           port: 22
           script: |
-            cd ~/ESP32CAM/server
+            set -e
+            cd ~/ESP32CAM
+            echo "--- UPDATE SOURCE CODE ---"
             git pull origin main
+
+            echo "--- START / UPDATE POSTGRESQL ---"
+            cd docker
+            docker compose up -d
+
+            echo "--- RESTART ESP32CAM SERVICE ---"
             sudo systemctl daemon-reload
             sudo systemctl restart espcam
-            echo "--- STATUS SERVICE SETELAH UPDATE ---"
+
+            echo "--- STATUS SERVICE ---"
             systemctl status espcam --no-pager
             echo "Deploy Berhasil!"
