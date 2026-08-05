@@ -99,7 +99,10 @@ def get_detection(detection_id):
                 "success":False,
                 "message":"Data tidak ditemukan"
             }),404
-        return jsonify(serialize(data))
+        return jsonify({
+            "success": True,
+            "data": serialize(data)
+        })
 
     except Exception as e:
         return jsonify({
