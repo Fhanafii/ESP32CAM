@@ -1,9 +1,5 @@
 import json
 import os
-API_BASE_URL = os.getenv(
-    "API_BASE_URL",
-    "http://localhost:5001"
-)
 
 from flask import send_from_directory
 from uuid import UUID
@@ -13,7 +9,7 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 
-from config import ALLOWED_ORIGINS
+from config import ALLOWED_ORIGINS, API_BASE_URL
 from database import Database
 
 app = Flask(__name__)

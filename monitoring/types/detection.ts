@@ -6,6 +6,7 @@ export type DetectionStatus =
 export interface Detection {
   id: string;
   batch_number: number;
+  batch_folder: string;
   detected_at: string;
   total_frames: number;
   detected_frames: number;
@@ -13,10 +14,7 @@ export interface Detection {
   presence_ratio: number;
   longest_streak: number;
   suspicion_score: number;
-  status: DetectionStatus;
-  batch_folder: string;
-  thumbnail_path: string;
-  video_path: string;
+  status: string;
   whatsapp_sent: boolean;
   created_at: string;
 }
