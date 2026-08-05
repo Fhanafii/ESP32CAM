@@ -32,12 +32,15 @@ jobs:
             git pull origin main
 
             echo "--- ACTIVATE PYTHON VENV ---"
+            cd server
             source venv/bin/activate
 
             echo "--- INSTALL PYTHON DEPENDENCIES ---"
             pip install -r server/requirement.txt
 
             echo "--- START / UPDATE POSTGRESQL ---"
+            deactivate
+            cd ..
             cd docker
             docker compose up -d
 
