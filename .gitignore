@@ -20,3 +20,10 @@ server/__pycache__
 server/access.log
 server/error.log
 server/qr_scan.png
+monitoring/.env
+monitoring/.env.local
+monitoring/.prisma
+monitoring/.next
+monitoring/node_modules
+monitoring/AGENTS.md
+monitoring/CLAUDE.md
