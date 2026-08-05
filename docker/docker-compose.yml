@@ -15,5 +15,34 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+    networks:
+      - monitoring-network
+
+  nginx:
+    image: nginx:alpine
+
+    container_name: monitoring-nginx
+
+    restart: unless-stopped
+
+    ports:
+      - "80:80"
+
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+    depends_on:
+      - postgres
+
+    networks:
+      - monitoring-network
+
 volumes:
   postgres_data:
+
+networks:
+  monitoring-network:
+    driver: bridge
