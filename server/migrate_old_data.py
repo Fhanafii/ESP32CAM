@@ -40,8 +40,6 @@ def scan_batch(path, folder):
 
     total_frames = 0
     detected_frames = 0
-    thumbnail = None
-    video = None
 
     for file in sorted(os.listdir(path)):
 
@@ -64,8 +62,6 @@ def scan_batch(path, folder):
     return {
         "total_frames": total_frames,
         "detected_frames": detected_frames,
-        "thumbnail_path": thumbnail,
-        "video_path": video
     }
 
 
@@ -81,6 +77,9 @@ def migrate():
             FRAMES_DIR,
             folder
         )
+
+        if not os.path.isdir(full_path):
+            continue
 
         relative_folder = f"frames/{folder}"
 
@@ -102,35 +101,25 @@ def migrate():
 
             continue
 
-        result = scan_batch(full_path, folder)
+        result = scan_batch(full_path)
+
+        whatsapp = False
 
         if result["detected_frames"] == 0:
 
             status = "Normal"
-
             confidence = 0
-
             ratio = 0
-
             streak = 0
-
             score = 0
-
-            whatsapp = False
 
         else:
 
             status = None
-
             confidence = None
-
             ratio = None
-
             streak = None
-
             score = None
-
-            whatsapp = False
 
         db.insert_detection({
             "batch_number": batch_number,
@@ -142,8 +131,6 @@ def migrate():
             "longest_streak": streak,
             "suspicion_score": score,
             "status": status,
-            "thumbnail_path": result["thumbnail_path"],
-            "video_path": result["video_path"],
             "batch_folder": relative_folder,
             "whatsapp_sent": whatsapp
         })
@@ -151,9 +138,7 @@ def migrate():
         inserted += 1
 
         print(
-
             f"[OK] Batch {batch_number}"
-
         )
 
     print()
