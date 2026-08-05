@@ -36,7 +36,7 @@ jobs:
             source venv/bin/activate
 
             echo "--- INSTALL PYTHON DEPENDENCIES ---"
-            pip install -r server/requirement.txt
+            pip install -r requirement.txt
 
             echo "--- START / UPDATE POSTGRESQL ---"
             deactivate
