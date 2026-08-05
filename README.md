@@ -88,7 +88,7 @@ sudo apt install python3.10-venv ffmpeg xvfb libgl1 libglib2.0-0 -y
 ```bash
 python3.10 -m venv venv
 source venv/bin/activate
-pip install -r requirements.txt gunicorn
+pip install -r requirement.txt gunicorn
 playwright install chromium
 sudo venv/bin/playwright install-deps chromium
 ```
