@@ -141,6 +141,75 @@ class Database:
 
             return cur.fetchall()
 
+    def get_dashboard(self):
+        conn = self.connect()
+
+        with conn.cursor() as cur:
+            cur.execute("""
+                SELECT
+                    COUNT(*) AS total,
+                    COUNT(*) FILTER (WHERE status='Normal') AS normal,
+                    COUNT(*) FILTER (WHERE status='Perlu Dipantau') AS monitoring,
+                    COUNT(*) FILTER (WHERE status='Mencurigakan') AS suspicious
+                FROM detections
+            """)
+
+            return cur.fetchone()
+
+    def get_filtered(
+        self,
+        status=None,
+        start=None,
+        end=None,
+        keyword=None
+    ):
+
+        conn = self.connect()
+        query = """
+            SELECT *
+            FROM detections
+            WHERE 1=1
+        """
+
+        params = []
+
+        if status:
+            query += " AND status = %s"
+            params.append(status)
+
+        if start:
+            query += " AND detected_at >= %s"
+            params.append(start)
+
+        if end:
+            query += " AND detected_at <= %s"
+            params.append(end)
+
+        if keyword:
+            query += """
+                AND (
+                    CAST(batch_number AS TEXT) ILIKE %s
+                    OR status ILIKE %s
+                    OR CAST(detected_at AS TEXT) ILIKE %s
+                )
+            """
+
+            params.extend([
+                f"%{keyword}%",
+                f"%{keyword}%",
+                f"%{keyword}%"
+            ])
+
+        query += """
+            ORDER BY detected_at DESC
+        """
+
+        with conn.cursor() as cur:
+
+            cur.execute(query, params)
+
+            return cur.fetchall()
+
     def delete_detection(self, detection_id):
         conn = self.connect()
 
