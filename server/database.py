@@ -229,7 +229,7 @@ class Database:
                 query += """
                     AND (
                         batch_number::TEXT ILIKE %s
-                        OR status ILIKE %s
+                        OR status::TEXT ILIKE %s
                         OR detected_at::TEXT ILIKE %s
                     )
                 """
