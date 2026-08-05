@@ -148,9 +148,9 @@ class Database:
             cur.execute("""
                 SELECT
                     COUNT(*) AS total,
-                    COUNT(*) FILTER (WHERE status='Normal') AS normal,
-                    COUNT(*) FILTER (WHERE status='Perlu Dipantau') AS monitoring,
-                    COUNT(*) FILTER (WHERE status='Mencurigakan') AS suspicious
+                    COUNT(*) FILTER (WHERE status='Normal') AS Normal,
+                    COUNT(*) FILTER (WHERE status='Perlu Dipantau') AS Perlu Dipantau,
+                    COUNT(*) FILTER (WHERE status='Mencurigakan') AS Mencurigakan
                 FROM detections
             """)
 
