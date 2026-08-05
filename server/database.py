@@ -34,49 +34,46 @@ class Database:
             self.conn = None
 
     def save_detection(self, detection: dict):
-
         conn = self.connect()
 
-        with conn.cursor() as cur:
-
-            cur.execute(
-                """
-                INSERT INTO detections (
-
-                    batch_number,
-                    batch_folder,
-                    detected_at,
-                    total_frames,
-                    detected_frames,
-                    avg_confidence,
-                    presence_ratio,
-                    longest_streak,
-                    suspicion_score,
-                    status,
-                    whatsapp_sent
-
+        try:
+            with conn.cursor() as cur:
+                cur.execute(
+                    """
+                    INSERT INTO detections (
+                        batch_number,
+                        batch_folder,
+                        detected_at,
+                        total_frames,
+                        detected_frames,
+                        avg_confidence,
+                        presence_ratio,
+                        longest_streak,
+                        suspicion_score,
+                        status,
+                        whatsapp_sent
+                    )
+                    VALUES (
+                        %(batch_number)s,
+                        %(batch_folder)s,
+                        %(detected_at)s,
+                        %(total_frames)s,
+                        %(detected_frames)s,
+                        %(avg_confidence)s,
+                        %(presence_ratio)s,
+                        %(longest_streak)s,
+                        %(suspicion_score)s,
+                        %(status)s,
+                        %(whatsapp_sent)s
+                    )
+                    """,
+                    detection,
                 )
-
-                VALUES (
-
-                    %(batch_number)s,
-                    %(batch_folder)s,
-                    %(detected_at)s,
-                    %(total_frames)s,
-                    %(detected_frames)s,
-                    %(avg_confidence)s,
-                    %(presence_ratio)s,
-                    %(longest_streak)s,
-                    %(suspicion_score)s,
-                    %(status)s,
-                    %(whatsapp_sent)s
-
-                )
-                """,
-                detection,
-            )
-
             conn.commit()
+
+        except Exception:
+            conn.rollback()
+            raise
 
     def test_connection(self):
 
