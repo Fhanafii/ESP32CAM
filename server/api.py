@@ -1,4 +1,11 @@
 import json
+import os
+API_BASE_URL = os.getenv(
+    "API_BASE_URL",
+    "http://localhost:5001"
+)
+
+from flask import send_from_directory
 from uuid import UUID
 from decimal import Decimal
 from datetime import datetime
@@ -92,23 +99,140 @@ def dashboard():
 def get_detection(detection_id):
 
     try:
-        data = db.get_by_id(str(detection_id))
+        detection = db.get_by_id(str(detection_id))
 
-        if not data:
+        if not detection:
+
             return jsonify({
-                "success":False,
-                "message":"Data tidak ditemukan"
-            }),404
+                "success": False,
+                "message": "Data tidak ditemukan"
+            }), 404
+
+        images, video = build_media(
+            detection["batch_folder"],
+            detection["batch_number"]
+        )
+
+        result = serialize(detection)
+
+        result["images"] = images
+        result["video"] = video
+
         return jsonify({
             "success": True,
-            "data": serialize(data)
+            "data": result
         })
 
     except Exception as e:
+
         return jsonify({
-            "success":False,
-            "message":str(e)
-        }),500
+            "success": False,
+            "message": str(e)
+        }), 500
+
+@app.route("/api/detections/<uuid:detection_id>/files")
+def detection_files(detection_id):
+
+    try:
+        data = db.get_files_info(str(detection_id))
+
+        if not data:
+
+            return jsonify({
+                "success": False,
+                "message": "Data tidak ditemukan"
+            }), 404
+
+        batch_folder = data["batch_folder"]
+        batch_number = data["batch_number"]
+
+        absolute_folder = os.path.abspath(batch_folder)
+
+        if not os.path.exists(absolute_folder):
+
+            return jsonify({
+                "success": False,
+                "message": "Folder batch tidak ditemukan"
+            }), 404
+
+        images = []
+
+        video = None
+
+        for file in sorted(os.listdir(absolute_folder)):
+
+            if file.lower().endswith(".jpg"):
+                images.append({
+                    "name": file,
+                    "url": f"{API_BASE_URL}/api/files/{batch_folder}/{file}"
+                })
+
+            elif file.lower().endswith(".mp4"):
+                video = {
+                    "name": file,
+                    "url": f"{API_BASE_URL}/api/files/{batch_folder}/{file}"
+                }
+
+        return jsonify({
+            "success": True,
+            "batch_folder": batch_folder,
+            "batch_number": batch_number,
+            "images": images,
+            "video": video
+
+        })
+
+    except Exception as e:
+
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 500
+
+
+@app.route("/api/files/<path:filepath>")
+def serve_file(filepath):
+
+    try:
+        absolute_path = os.path.abspath(filepath)
+        folder = os.path.dirname(absolute_path)
+        filename = os.path.basename(absolute_path)
+
+        return send_from_directory(folder, filename)
+
+    except Exception as e:
+        return jsonify({
+            "success": False,
+            "message": str(e)
+        }), 404
+
+
+def build_media(batch_folder, batch_number):
+
+    absolute_folder = os.path.abspath(batch_folder)
+
+    images = []
+    video = None
+
+    if not os.path.exists(absolute_folder):
+        return images, video
+
+    for file in sorted(os.listdir(absolute_folder)):
+
+        if file.lower().endswith(".jpg"):
+            images.append({
+                "name": file,
+                "detected": "_detected" in file,
+                "url": f"{API_BASE_URL}/api/files/{batch_folder}/{file}"
+            })
+
+        elif file.lower().endswith(".mp4"):
+            video = {
+                "name": file,
+                "url": f"{API_BASE_URL}/api/files/{batch_folder}/{file}"
+            }
+
+    return images, video
 
 if __name__=="__main__":
 

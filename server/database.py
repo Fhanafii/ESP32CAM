@@ -250,6 +250,25 @@ class Database:
             "total_pages": (total + limit - 1) // limit
         }
 
+
+    def get_files_info(self, detection_id):
+        conn = self.get_connection()
+        cur = conn.cursor()
+        cur.execute("""
+            SELECT
+                batch_folder,
+                batch_number
+            FROM detections
+            WHERE id = %s
+        """, (detection_id,))
+
+        row = cur.fetchone()
+
+        cur.close()
+        conn.close()
+        
+        return row
+
     def delete_detection(self, detection_id):
         conn = self.connect()
 
