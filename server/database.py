@@ -103,15 +103,15 @@ class Database:
                     ORDER BY detected_at DESC
                     """
                 )
-            return cur.fetchone()
+                return cur.fetchall()
 
         except Exception:
             conn.rollback()
             raise
 
     def get_by_id(self, detection_id):
-
         conn = self.connect()
+
         try:
 
             with conn.cursor() as cur:
@@ -122,11 +122,13 @@ class Database:
                     FROM detections
                     WHERE id=%s
                     """,
-                    (detection_id,),
+                    (detection_id,)
                 )
-            return cur.fetchone()
-        
+
+                return cur.fetchone()
+
         except Exception:
+
             conn.rollback()
             raise
 
@@ -151,45 +153,41 @@ class Database:
                     (start_date, end_date),
                 )
 
-            return cur.fetchone()
+                return cur.fetchall()
 
         except Exception:
             conn.rollback()
             raise
 
     def get_dashboard(self):
-        conn=self.connect()
+
+        conn = self.connect()
 
         try:
 
             with conn.cursor() as cur:
+
                 cur.execute("""
                     SELECT
                         COUNT(*) AS total_batch,
-
                         SUM(detected_frames) AS total_detected_frames,
-
                         COUNT(*) FILTER (
-                            WHERE status = 'Normal'
+                            WHERE status='Normal'
                         ) AS normal,
-
                         COUNT(*) FILTER (
-                            WHERE status = 'Perlu Dipantau'
+                            WHERE status='Perlu Dipantau'
                         ) AS monitoring,
-
                         COUNT(*) FILTER (
-                            WHERE status = 'Mencurigakan'
+                            WHERE status='Mencurigakan'
                         ) AS suspicious,
-
                         COUNT(*) FILTER (
-                            WHERE whatsapp_sent = TRUE
+                            WHERE whatsapp_sent=TRUE
                         ) AS whatsapp_sent
-
                     FROM detections;
                 """)
 
-            return cur.fetchone()
-        
+                return cur.fetchone()
+
         except Exception:
             conn.rollback()
             raise
@@ -291,7 +289,7 @@ class Database:
                     WHERE id=%s
                 """,(detection_id,))
 
-            return cur.fetchone()
+                return cur.fetchone()
         
         except Exception:
             conn.rollback()
