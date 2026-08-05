@@ -47,7 +47,9 @@ jobs:
             echo "--- RESTART ESP32CAM SERVICE ---"
             sudo systemctl daemon-reload
             sudo systemctl restart espcam
+            sudo systemctl restart monitoring-api
 
             echo "--- STATUS SERVICE ---"
             systemctl status espcam --no-pager
+            systemctl status monitoring-api --no-pager
             echo "Deploy Berhasil!"
