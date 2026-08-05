@@ -36,7 +36,7 @@ def parse_folder(folder_name):
     return batch_number, detected_at
 
 
-def scan_batch(path, folder):
+def scan_batch(path):
 
     total_frames = 0
     detected_frames = 0
@@ -48,16 +48,7 @@ def scan_batch(path, folder):
             total_frames += 1
 
             if "_detected" in file:
-
                 detected_frames += 1
-
-                if thumbnail is None:
-
-                    thumbnail = f"frames/{folder}/{file}"
-
-        elif file.endswith(".mp4"):
-
-            video = f"frames/{folder}/{file}"
 
     return {
         "total_frames": total_frames,
