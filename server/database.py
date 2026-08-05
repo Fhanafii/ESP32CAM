@@ -293,3 +293,110 @@ class Database:
                 """
             )
             conn.commit()
+
+    # Migrate data from old folder structure
+    def exists_batch_folder(self, batch_folder):
+        query = """
+            SELECT 1
+            FROM detections
+            WHERE batch_folder=%s
+            LIMIT 1
+        """
+
+        self.cursor.execute(query, (batch_folder,))
+
+        return self.cursor.fetchone() is not None
+
+    def insert_detection(self, data):
+
+        query = """
+        INSERT INTO detections
+        (
+            batch_number,
+            detected_at,
+            total_frames,
+            detected_frames,
+            avg_confidence,
+            presence_ratio,
+            longest_streak,
+            suspicion_score,
+            status,
+            thumbnail_path,
+            video_path,
+            batch_folder,
+            whatsapp_sent
+        )
+        VALUES
+        (
+            %(batch_number)s,
+            %(detected_at)s,
+            %(total_frames)s,
+            %(detected_frames)s,
+            %(avg_confidence)s,
+            %(presence_ratio)s,
+            %(longest_streak)s,
+            %(suspicion_score)s,
+            %(status)s,
+            %(thumbnail_path)s,
+            %(video_path)s,
+            %(batch_folder)s,
+            %(whatsapp_sent)s
+        )
+        """
+
+        self.cursor.execute(query, data)
+
+        self.conn.commit()
+
+
+    def update_detection_from_whatsapp(
+        self,
+        batch_number,
+        detected_at,
+        avg_confidence,
+        presence_ratio,
+        longest_streak,
+        suspicion_score,
+        status
+    ):
+
+        query = """
+            UPDATE detections
+
+            SET
+
+                avg_confidence=%s,
+
+                presence_ratio=%s,
+
+                longest_streak=%s,
+
+                suspicion_score=%s,
+
+                status=%s,
+
+                whatsapp_sent=TRUE
+
+            WHERE
+
+                batch_number=%s
+
+            AND
+
+                detected_at=%s
+        """
+
+        self.cursor.execute(
+            query,
+            (
+                avg_confidence,
+                presence_ratio,
+                longest_streak,
+                suspicion_score,
+                status,
+                batch_number,
+                detected_at
+            )
+        )
+
+        self.conn.commit()
