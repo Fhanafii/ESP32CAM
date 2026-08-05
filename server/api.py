@@ -13,11 +13,28 @@ from flask import Flask
 from flask import jsonify
 from flask import request
 
+from config import ALLOWED_ORIGINS
 from database import Database
 
 app = Flask(__name__)
 
 db = Database()
+
+@app.after_request
+def add_cors_headers(response):
+    origin = request.headers.get("Origin")
+
+    if origin in ALLOWED_ORIGINS:
+        response.headers["Access-Control-Allow-Origin"] = origin
+        response.headers["Vary"] = "Origin"
+        response.headers["Access-Control-Allow-Methods"] = (
+            "GET, POST, PUT, PATCH, DELETE, OPTIONS"
+        )
+        response.headers["Access-Control-Allow-Headers"] = (
+            "Content-Type, Authorization"
+        )
+
+    return response
 
 def serialize(data):
 
@@ -49,7 +66,7 @@ def get_detections():
         status = request.args.get("status")
         start = request.args.get("start")
         end = request.args.get("end")
-        keyword = request.args.get("q")
+        keyword = request.args.get("keyword") or request.args.get("q")
 
         result = db.get_paginated(
             page=page,
