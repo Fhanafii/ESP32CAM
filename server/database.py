@@ -332,8 +332,6 @@ class Database:
                         longest_streak,
                         suspicion_score,
                         status,
-                        thumbnail_path,
-                        video_path,
                         batch_folder,
                         whatsapp_sent
                     )
@@ -348,8 +346,6 @@ class Database:
                         %(longest_streak)s,
                         %(suspicion_score)s,
                         %(status)s,
-                        %(thumbnail_path)s,
-                        %(video_path)s,
                         %(batch_folder)s,
                         %(whatsapp_sent)s
                     )
