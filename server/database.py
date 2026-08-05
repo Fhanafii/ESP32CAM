@@ -156,8 +156,10 @@ class Database:
 
             return cur.fetchone()
 
-    def get_filtered(
+    def get_paginated(
         self,
+        page=1,
+        limit=20,
         status=None,
         start=None,
         end=None,
@@ -165,6 +167,8 @@ class Database:
     ):
 
         conn = self.connect()
+        offset = (page - 1) * limit
+
         query = """
             SELECT *
             FROM detections
@@ -200,15 +204,35 @@ class Database:
                 f"%{keyword}%"
             ])
 
+        count_query = f"""
+            SELECT COUNT(*)
+            FROM ({query}) AS filtered
+        """
+
         query += """
             ORDER BY detected_at DESC
+            LIMIT %s OFFSET %s
         """
 
         with conn.cursor() as cur:
 
-            cur.execute(query, params)
+            cur.execute(count_query, params)
+            total = cur.fetchone()["count"]
 
-            return cur.fetchall()
+            cur.execute(
+                query,
+                params + [limit, offset]
+            )
+
+            rows = cur.fetchall()
+
+        return {
+            "rows": rows,
+            "total": total,
+            "page": page,
+            "limit": limit,
+            "total_pages": (total + limit - 1) // limit
+        }
 
     def delete_detection(self, detection_id):
         conn = self.connect()

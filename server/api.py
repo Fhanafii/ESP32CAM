@@ -36,33 +36,40 @@ def home():
 def get_detections():
 
     try:
+        page = int(request.args.get("page", 1))
+        limit = int(request.args.get("limit", 20))
+
         status = request.args.get("status")
         start = request.args.get("start")
         end = request.args.get("end")
         keyword = request.args.get("q")
 
-        if status or start or end or keyword:
-            data = db.get_filtered(
-                status=status,
-                start=start,
-                end=end,
-                keyword=keyword
-            )
-
-        else:
-            data = db.get_all()
+        result = db.get_paginated(
+            page=page,
+            limit=limit,
+            status=status,
+            start=start,
+            end=end,
+            keyword=keyword
+        )
 
         return jsonify({
             "success": True,
-            "count": len(data),
-            "data": serialize(data)
+            "page": result["page"],
+            "limit": result["limit"],
+            "total": result["total"],
+            "total_pages": result["total_pages"],
+            "count": len(result["rows"]),
+            "data": serialize(result["rows"])
+
         })
 
     except Exception as e:
+
         return jsonify({
             "success": False,
             "message": str(e)
-        }), 500
+        }),500
 
 @app.route("/api/dashboard")
 def dashboard():
