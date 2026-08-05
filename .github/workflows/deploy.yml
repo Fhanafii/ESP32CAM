@@ -31,6 +31,12 @@ jobs:
             echo "--- UPDATE SOURCE CODE ---"
             git pull origin main
 
+            echo "--- ACTIVATE PYTHON VENV ---"
+            source venv/bin/activate
+
+            echo "--- INSTALL PYTHON DEPENDENCIES ---"
+            pip install -r server/requirement.txt
+
             echo "--- START / UPDATE POSTGRESQL ---"
             cd docker
             docker compose up -d
