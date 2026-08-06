@@ -23,7 +23,7 @@ export function SummaryGrid({
     <section className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
 
       <SummaryCard
-        title="Total Batch"
+        title="Total Batch Terdeteksi"
         value={dashboard.total_batch}
         icon={Shield}
         color="bg-slate-700"

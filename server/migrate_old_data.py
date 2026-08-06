@@ -98,7 +98,7 @@ def migrate():
             continue
 
         db.insert_detection({
-             "batch_number": batch_number,
+            "batch_number": batch_number,
             "detected_at": detected_at,
             "total_frames": result["total_frames"],
             "detected_frames": result["detected_frames"],

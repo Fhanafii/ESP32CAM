@@ -40,23 +40,39 @@ export function DashboardPage() {
                     />
                 )}
 
-                <DateFilter
-                    start={start}
-                    end={end}
-                    onStartChange={setStart}
-                    onEndChange={setEnd}
-                />
+                <section className="space-y-6">
+                    <div className="flex items-center justify-between">
 
-                <HistoryList
-                    detections={detectionsQuery.data?.data ?? []}
-                    loading={detectionsQuery.isLoading}
-                />
+                        <div>
+                            <h2 className="text-2xl font-semibold">
+                                Riwayat Deteksi
+                            </h2>
 
-                <HistoryPagination
-                    page={page}
-                    totalPages={detectionsQuery.data?.total_pages ?? 1}
-                    onPageChange={setPage}
-                />
+                            <p className="text-sm text-muted-foreground">
+                                Daftar seluruh hasil deteksi yang tersimpan.
+                            </p>
+                        </div>
+
+                        <DateFilter
+                            start={start}
+                            end={end}
+                            onStartChange={setStart}
+                            onEndChange={setEnd}
+                        />
+
+                    </div>
+
+                    <HistoryList
+                        detections={detectionsQuery.data?.data ?? []}
+                        loading={detectionsQuery.isLoading}
+                    />
+
+                    <HistoryPagination
+                        page={page}
+                        totalPages={detectionsQuery.data?.total_pages ?? 1}
+                        onPageChange={setPage}
+                    />
+                </section>
             </main>
         </>
     );

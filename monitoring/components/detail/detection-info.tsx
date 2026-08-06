@@ -1,60 +1,83 @@
 "use client";
 
 import {
-Card,
-CardContent,
+  Card,
+  CardContent,
 } from "@/components/ui/card";
 
 import { DetectionDetail } from "@/types/detection-detail";
 
-interface Props{
-    detection:DetectionDetail;
+interface Props {
+  detection: DetectionDetail;
 }
 
 export function DetectionInfo({
-    detection,
-}:Props){
+  detection,
+}: Props) {
 
-    const items=[
-        ["Confidence",
-        `${(detection.avg_confidence)} %`],
+  const items = [
+    [
+      "Lokasi",
+      "Jl.B6 gang belakang masjid Al-muhajirin RT 07/ RW 013 Kel.Pejagalan, Kec.Penjaringan, Jakarta Utara",
+    ],
 
-        ["Presence Ratio",
-        detection.presence_ratio],
+    [
+      "Confidence",
+      `${detection.avg_confidence}%`,
+    ],
 
-        ["Longest Streak",
-        detection.longest_streak],
+    [
+      "Presence Ratio",
+      detection.presence_ratio,
+    ],
 
-        ["Detected Frame",
-        `${detection.detected_frames}/${detection.total_frames}`],
+    [
+      "Longest Streak",
+      detection.longest_streak,
+    ],
 
-        ["WhatsApp",
-        detection.whatsapp_sent?"Ya":"Tidak"],
-    ];
+    [
+      "Detected Frame",
+      `${detection.detected_frames}/${detection.total_frames}`,
+    ],
 
-    return(
-        <Card>
-            <CardContent className="space-y-4 p-6">
-                {
-                    items.map(([title,value])=>(
+    [
+      "WhatsApp",
+      detection.whatsapp_sent ? "Terkirim" : "Tidak Terkirim",
+    ],
 
-                        <div
-                            key={title}
-                            className="flex justify-between"
-                        >
+    [
+      "Created At",
+      new Date(detection.created_at).toLocaleString("id-ID"),
+    ],
+  ];
 
-                            <span className="text-muted-foreground">
-                                {title}
-                            </span>
+  return (
+    <Card>
 
-                            <span>
-                                {value}
-                            </span>
+      <CardContent className="space-y-4 p-6">
 
-                        </div>
-                    ))
-                }
-            </CardContent>
-        </Card>
-    );
+        {items.map(([title, value]) => (
+
+          <div
+            key={title}
+            className="flex items-start justify-between gap-6"
+          >
+
+            <span className="text-muted-foreground">
+              {title}
+            </span>
+
+            <span className="max-w-xs text-right font-medium">
+              {value}
+            </span>
+
+          </div>
+
+        ))}
+
+      </CardContent>
+
+    </Card>
+  );
 }

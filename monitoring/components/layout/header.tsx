@@ -20,7 +20,7 @@ export function Header({
           </h1>
 
           <p className="text-sm text-muted-foreground">
-            Sistem Keamanan Otomatis Berbasis IoT
+            Sistem Keamanan Otomatis Berbasis IoT RT 007
           </p>
         </div>
 
