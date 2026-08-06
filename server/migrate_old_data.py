@@ -26,11 +26,8 @@ def parse_folder(folder_name):
     time = match.group(3).replace("-", ":")
 
     detected_at = datetime.strptime(
-
         f"{date} {time}",
-
         "%Y-%m-%d %H:%M:%S"
-
     )
 
     return batch_number, detected_at
@@ -98,19 +95,9 @@ def migrate():
 
         if result["detected_frames"] == 0:
 
-            status = "Normal"
-            confidence = 0
-            ratio = 0
-            streak = 0
-            score = 0
-
-        else:
-
-            status = None
-            confidence = None
-            ratio = None
-            streak = None
-            score = None
+            skipped += 1
+            print(f"[SKIP - NO DETECTION] {folder}")
+            continue
 
         db.insert_detection({
             "batch_number": batch_number,
