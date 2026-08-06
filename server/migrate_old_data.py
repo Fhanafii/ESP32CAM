@@ -91,8 +91,6 @@ def migrate():
 
         result = scan_batch(full_path)
 
-        whatsapp = False
-
         if result["detected_frames"] == 0:
 
             skipped += 1
@@ -100,17 +98,17 @@ def migrate():
             continue
 
         db.insert_detection({
-            "batch_number": batch_number,
+             "batch_number": batch_number,
             "detected_at": detected_at,
             "total_frames": result["total_frames"],
             "detected_frames": result["detected_frames"],
-            "avg_confidence": confidence,
-            "presence_ratio": ratio,
-            "longest_streak": streak,
-            "suspicion_score": score,
-            "status": status,
+            "avg_confidence": None,
+            "presence_ratio": None,
+            "longest_streak": None,
+            "suspicion_score": None,
+            "status": None,
             "batch_folder": relative_folder,
-            "whatsapp_sent": whatsapp
+            "whatsapp_sent": False
         })
 
         inserted += 1
