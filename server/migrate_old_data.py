@@ -91,7 +91,7 @@ def migrate():
 
         result = scan_batch(full_path)
 
-        if result["detected_frames"] == 0:
+        if result["detected_frames"] < 2:
 
             skipped += 1
             print(f"[SKIP - NO DETECTION] {folder}")
