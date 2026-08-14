@@ -234,7 +234,7 @@ def upload_done():
             f.write(f"Total frames: {len(frames)}\n")
             f.write(f"Average Confidence: {sum(confidences)/len(confidences) if confidences else 0:.2f}\n")
             f.write(f"Presence Ratio: {detected_count/len(frames):.2f}\n")
-            f.write(f"Longest Streak: {max_streak}\n")
+            f.write(f"Longest Streak: {longest_streak}\n")
             f.write(f"Suspicion Score: {score}\n")
             f.write(f"Status: {suspicious_label}\n")
             f.write(f"WhatsApp Sent: {human_confirmed}\n") 
