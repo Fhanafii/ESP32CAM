@@ -225,20 +225,6 @@ def upload_done():
                 cv2.imwrite(filename, frame)
                 print(f"No detection → {filename}")
 
-        # Log deteksi
-        with open(f"{batch_folder}/log.txt", "w") as f:
-            f.write(f"Batch Number: {batch_count}\n")
-            f.write(f"Timestamp: {timestamp}\n")
-            f.write(f"Detected: {detected_count}\n")
-            f.write(f"Undetected: {len(frames) - detected_count}\n")
-            f.write(f"Total frames: {len(frames)}\n")
-            f.write(f"Average Confidence: {sum(confidences)/len(confidences) if confidences else 0:.2f}\n")
-            f.write(f"Presence Ratio: {detected_count/len(frames):.2f}\n")
-            f.write(f"Longest Streak: {longest_streak}\n")
-            f.write(f"Suspicion Score: {score}\n")
-            f.write(f"Status: {suspicious_label}\n")
-            f.write(f"WhatsApp Sent: {human_confirmed}\n") 
-
         print(f"Batch done! Saved to {batch_folder}")
         
         if detected_count > 1:
@@ -308,7 +294,22 @@ def upload_done():
         else:
             suspicious_label = "Mencurigakan"
 
+        # Log deteksi
+        with open(f"{batch_folder}/log.txt", "w") as f:
+            f.write(f"Batch Number: {batch_count}\n")
+            f.write(f"Timestamp: {timestamp}\n")
+            f.write(f"Detected: {detected_count}\n")
+            f.write(f"Undetected: {len(frames) - detected_count}\n")
+            f.write(f"Total frames: {len(frames)}\n")
+            f.write(f"Average Confidence: {avg_conf:.2f}%\n")
+            f.write(f"Presence Ratio: {detected_count/len(frames):.2f}\n")
+            f.write(f"Longest Streak: {longest_streak}\n")
+            f.write(f"Suspicion Score: {score}\n")
+            f.write(f"Status: {suspicious_label}\n")
+            f.write(f"WhatsApp Sent: {human_confirmed}\n") 
 
+        print(f"Log saved to {batch_folder}/log.txt")
+        
         try:
             db.save_detection({
                 "batch_number": batch_count,
