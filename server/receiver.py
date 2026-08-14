@@ -309,7 +309,7 @@ def upload_done():
             f.write(f"WhatsApp Sent: {human_confirmed}\n") 
 
         print(f"Log saved to {batch_folder}/log.txt")
-        detected_at = datetime.now(WIB).strftime("%Y-%m-%d_%H-%M-%S")
+        detected_at = datetime.now(WIB).replace(tzinfo=None)
 
         if detected_count >= 2:
             try:
