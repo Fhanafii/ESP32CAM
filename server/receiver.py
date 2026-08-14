@@ -309,13 +309,14 @@ def upload_done():
             f.write(f"WhatsApp Sent: {human_confirmed}\n") 
 
         print(f"Log saved to {batch_folder}/log.txt")
+        detected_at = datetime.now(WIB).strftime("%Y-%m-%d_%H-%M-%S")
 
         if detected_count >= 2:
             try:
                 db.save_detection({
                     "batch_number": batch_count,
                     "batch_folder": batch_folder,
-                    "detected_at": datetime.now(WIB),
+                    "detected_at": detected_at,
                     "total_frames": len(frames),
                     "detected_frames": detected_count,
                     "avg_confidence": round(avg_conf,2),
