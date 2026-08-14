@@ -309,26 +309,31 @@ def upload_done():
             f.write(f"WhatsApp Sent: {human_confirmed}\n") 
 
         print(f"Log saved to {batch_folder}/log.txt")
-        
-        try:
-            db.save_detection({
-                "batch_number": batch_count,
-                "batch_folder": batch_folder,
-                "detected_at": datetime.now(WIB),
-                "total_frames": len(frames),
-                "detected_frames": detected_count,
-                "avg_confidence": round(avg_conf,2),
-                "presence_ratio": round(presence_ratio,2),
-                "longest_streak": longest_streak,
-                "suspicion_score": score,
-                "status": suspicious_label,
-                "whatsapp_sent": human_confirmed
-            })
-            print("Database Saved")
-            
-        except Exception as e:
-            print(f"Database Error : {e}")
 
+        if human_confirmed >= 2:
+            try:
+                db.save_detection({
+                    "batch_number": batch_count,
+                    "batch_folder": batch_folder,
+                    "detected_at": datetime.now(WIB),
+                    "total_frames": len(frames),
+                    "detected_frames": detected_count,
+                    "avg_confidence": round(avg_conf,2),
+                    "presence_ratio": round(presence_ratio,2),
+                    "longest_streak": longest_streak,
+                    "suspicion_score": score,
+                    "status": suspicious_label,
+                    "whatsapp_sent": human_confirmed
+                })
+                print("Database Saved")
+                
+            except Exception as e:
+                print(f"Database Error : {e}")
+        else :
+             print(
+                f"Database Skip: hanya {detected_count} frame terdeteksi "
+                f"(minimal 2 frame)"
+            )
         # Buat String Caption
         caption = (
             f"🚨 *DETEKSI MANUSIA TERKONFIRMASI*\n\n"
