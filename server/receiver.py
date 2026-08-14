@@ -310,7 +310,7 @@ def upload_done():
 
         print(f"Log saved to {batch_folder}/log.txt")
 
-        if human_confirmed >= 2:
+        if detected_count >= 2:
             try:
                 db.save_detection({
                     "batch_number": batch_count,
