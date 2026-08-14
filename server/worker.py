@@ -34,28 +34,88 @@ def init_whatsapp():
 # Tambahkan fungsi ini untuk mengecek apakah WA masih sehat dan membersihkan pop-up
 def check_whatsapp_health():
     global page
+
     try:
-        # 1. Bersihkan Pop-up "Apa yang baru di WhatsApp Web" atau Info Pembaruan Berlapis
-        # Mencari tombol X di dalam elemen modal yang muncul
-        popup_close_btn = page.locator('button:is([aria-label="Tutup"], [aria-label="Close"])').first
-        if popup_close_btn.first.is_visible():
-            print("Terdeteksi pop-up pengumuman menghalangi layar. Menutup pop-up...", flush=True)
-            popup_close_btn.first.click(force=True)
+        # 1. TUTUP POPUP "APA YANG BARU DI WHATSAPP WEB"
+        # Tombol berdasarkan text "Lanjut"
+        continue_btn = page.get_by_role(
+            "button",
+            name="Lanjut",
+            exact=True
+        ).first
+
+        if continue_btn.is_visible():
+            print(
+                "Terdeteksi popup WhatsApp Web. "
+                "Menekan tombol Lanjut...",
+                flush=True
+            )
+
+            continue_btn.click(force=True)
+
             time.sleep(2)
 
-        # 2. Cek apakah ada tombol "Gunakan di Sini" (jika WA terbuka di tempat lain)
-        use_here_btn = page.locator('div[role="button"]:has-text("Gunakan di Sini"), div[role="button"]:has-text("Use Here")')
+        # Support bahasa Inggris
+        continue_btn_en = page.get_by_role(
+            "button",
+            name="Continue",
+            exact=True
+        ).first
+
+        if continue_btn_en.is_visible():
+            print(
+                "WhatsApp update popup detected. "
+                "Clicking Continue...",
+                flush=True
+            )
+            continue_btn_en.click(force=True)
+            time.sleep(2)
+
+        # 2. TUTUP POPUP LAIN DENGAN TOMBOL CLOSE
+        popup_close_btn = page.locator(
+            'button[aria-label="Tutup"], '
+            'button[aria-label="Close"]'
+        ).first
+
+        if popup_close_btn.is_visible():
+            print(
+                "Terdeteksi popup dengan tombol Close. "
+                "Menutup popup...",
+                flush=True
+            )
+            popup_close_btn.click(force=True)
+            time.sleep(2)
+
+
+        # 3. CEK "GUNAKAN DI SINI"
+        use_here_btn = page.locator(
+            'div[role="button"]:has-text("Gunakan di Sini"), '
+            'div[role="button"]:has-text("Use Here")'
+        ).first
+
         if use_here_btn.is_visible():
-            print("WhatsApp terbuka di perangkat lain. Mengalihkan kembali ke sini...", flush=True)
+            print(
+                "WhatsApp terbuka di perangkat lain. "
+                "Mengalihkan kembali ke sini...",
+                flush=True
+            )
             use_here_btn.click(force=True)
             time.sleep(5)
 
-        # 3. Cek apakah halaman error/crash (tidak ada input chat)
-        chat_input = page.locator('div[contenteditable="true"]')
-        if not chat_input.first.is_visible():
-            print("WhatsApp Web tampak macet/idle. Melakukan Reload...", flush=True)
+        # 4. CEK WHATSAPP SUDAH SELESAI LOADING
+        # Search bar WhatsApp lebih cocok dijadikan
+        # indikator bahwa halaman sudah siap.
+        search_box = page.locator(
+            'div[contenteditable="true"]'
+        ).first
+
+        if not search_box.is_visible():
+            print(
+                "WhatsApp Web belum siap. Melakukan reload...",
+                flush=True
+            )
             page.reload()
-            time.sleep(15) # Tunggu loading setelah reload
+            time.sleep(15)
             return False
         
         return True
