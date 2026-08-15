@@ -56,14 +56,28 @@ def home():
 def get_detections():
 
     try:
-        page = int(request.args.get("page", 1))
-        limit = int(request.args.get("limit", 20))
+        page = int(request.args.get("page", 1, type=int))
+        limit = int(request.args.get("limit", 20, type=int))
+        if page < 1:
+            page = 1
 
+        if limit < 1:
+            limit = 20
+
+        if limit > 50:
+            limit = 50
+        
         status = request.args.get("status")
         start = request.args.get("start")
         end = request.args.get("end")
-        keyword = request.args.get("keyword") or request.args.get("q")
+        keyword = ( request.args.get("keyword") or request.args.get("q") or "" ).strip()
 
+        if len (keyword) > 50:
+            return jsonify({
+                "success": False,
+                "message": "Keyword terlalu panjang"
+            }), 400
+        
         result = db.get_paginated(
             page=page,
             limit=limit,
